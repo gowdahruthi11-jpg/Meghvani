@@ -1,0 +1,56 @@
+# CONFIGURABLE ADVISORY RULES ENGINE
+# NOTE: These rules are DEMO RULES for architectural demonstration in Phase 1.
+# All agricultural logic MUST be validated with ICAR / ICAR-CRIDA / State Agricultural Universities / KVKs.
+
+version: "1.0-prototype"
+disclaimer: "DEMO ADVISORY RULES - NOT CERTIFIED AGRONOMIC ADVICE"
+
+decisions:
+  - SOW_NOW
+  - SOW_PART_NOW
+  - WAIT
+  - PROTECT_CROP
+  - DRAIN_FIELD
+  - CHECK_LOCAL_ADVICE
+
+demo_rules:
+  - rule_id: "RULE_ONSET_CONFIRMED_HIGH_CONFIDENCE"
+    trigger_signal: "ONSET"
+    min_probability: 0.70
+    max_break_risk: 0.25
+    decision: "SOW_NOW"
+    action_templates:
+      Hindi: "मानसून की शुरुआत अनुकूल है। {crop} की बुवाई शुरू कर सकते हैं। मिट्टी में पर्याप्त नमी सुनिश्चित करें।"
+      Marathi: "पावसाची सुरुवात अनुकूल आहे. {crop} ची पेरणी सुरू करू शकता. जमिनीत योग्य ओलावा तपासा."
+      Kannada: "ಮುಂಗಾರು ಪ್ರಾರಂಭವು ಆಶಾದಾಯಕವಾಗಿದೆ. {crop} ಬಿತ್ತನೆ ಆರಂಭಿಸಬಹುದು. ಮಣ್ಣಿನ ತೇವಾಂಶವನ್ನು ಪರೀಕ್ಷಿಸಿ."
+      English: "Favorable monsoon onset conditions predicted. You may proceed with sowing {crop}. Ensure adequate seed-bed moisture."
+
+  - rule_id: "RULE_FALSE_ONSET_RISK"
+    trigger_signal: "FALSE_ONSET"
+    min_probability: 0.55
+    decision: "WAIT"
+    action_templates:
+      Hindi: "चेतावनी: बारिश के बाद लम्बे सूखे का जोखिम है। {crop} की बुवाई रोकें और इंतज़ार करें।"
+      Marathi: "सावधान: सुरुवातीच्या पावसानंतर दीर्घ कोरड्या कालावधीचा धोका आहे. {crop} पेरणी घाईने करू नका, वाट पहा."
+      Kannada: "ಎಚ್ಚರಿಕೆ: ಆರಂಭಿಕ ಮಳೆಯ ನಂತರ ದೀರ್ಘ ಒಣ ಅವಧಿಯ ಸಾಧ್ಯತೆಯಿದೆ. {crop} ಬಿತ್ತನೆಗೆ ಆತುರಪಡಬೇಡಿ, ಕಾಯಿರಿ."
+      English: "Warning: High risk of false onset followed by dry spell. Hold off sowing {crop} and await sustained precipitation."
+
+  - rule_id: "RULE_BREAK_SPELL_WARNING"
+    trigger_signal: "BREAK"
+    min_probability: 0.60
+    decision: "PROTECT_CROP"
+    action_templates:
+      Hindi: "अगले 1-2 हफ्तों में बारिश में विराम (Dry Spell) की संभावना है। नमी संरक्षण के उपाय और मल्चिंग करें।"
+      Marathi: "पुढील 1-2 आठवड्यांत पावसाचा खंड पडण्याची शक्यता आहे. ओलावा टिकवण्यासाठी उपाययोजना करा."
+      Kannada: "ಮುಂದಿನ 1-2 ವಾರಗಳಲ್ಲಿ ಮಳೆ ವಿರಾಮದ ಸಾಧ್ಯತೆಯಿದೆ. ಮಣ್ಣಿನಲ್ಲಿ ತೇವಾಂಶ ಸಂರಕ್ಷಣೆಗೆ ಸೂಕ್ತ ಕ್ರಮ ಕೈಗೊಳ್ಳಿ."
+      English: "Prolonged dry spell predicted. Apply mulching, conserve soil moisture, and delay fertilizer application for {crop}."
+
+  - rule_id: "RULE_HEAVY_RAIN_ALERT"
+    trigger_signal: "HEAVY_RAIN"
+    min_probability: 0.65
+    decision: "DRAIN_FIELD"
+    action_templates:
+      Hindi: "भारी बारिश की संभावना! {crop} के खेतों में जल निकासी की व्यवस्था तुरंत करें।"
+      Marathi: "मुसळधार पावसाचा इशारा! {crop} पिकाच्या शेतातून पाण्याचा निचरा होण्याची सोय करा."
+      Kannada: "ಭಾರೀ ಮಳೆಯ ಮುನ್ಸೂಚನೆ! {crop} ಹೊಲಗಳಲ್ಲಿ ಹೆಚ್ಚುವರಿ ನೀರು ಹೊರಹೋಗಲು ಕಾಲುವೆ ಸಿದ್ಧಪಡಿಸಿ."
+      English: "Heavy rainfall alert! Ensure prompt field drainage channels are clear to prevent waterlogging for {crop}."

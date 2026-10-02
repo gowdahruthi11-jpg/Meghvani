@@ -1,0 +1,76 @@
+# DEMO CROPS CATALOGUE
+# NOTE: These are demo crop entries for initial testing and UI workflow validation.
+# All agricultural attributes must be validated against authoritative sources (ICAR / KVK).
+
+crops:
+  - id: 1
+    name: "Soybean"
+    scientific_name: "Glycine max"
+    season: "Kharif"
+    water_requirement: "MEDIUM"
+    duration_category: "MEDIUM (90-105 days)"
+    sowing_window: "Mid-June to First week of July"
+    critical_rainfall_threshold_mm: 50.0
+
+  - id: 2
+    name: "Cotton"
+    scientific_name: "Gossypium hirsutum"
+    season: "Kharif"
+    water_requirement: "MEDIUM_HIGH"
+    duration_category: "LONG (150-180 days)"
+    sowing_window: "June to Early July"
+    critical_rainfall_threshold_mm: 75.0
+
+  - id: 3
+    name: "Maize"
+    scientific_name: "Zea mays"
+    season: "Kharif"
+    water_requirement: "MEDIUM"
+    duration_category: "SHORT (85-95 days)"
+    sowing_window: "June to Mid-July"
+    critical_rainfall_threshold_mm: 40.0
+
+  - id: 4
+    name: "Paddy"
+    scientific_name: "Oryza sativa"
+    season: "Kharif"
+    water_requirement: "HIGH"
+    duration_category: "LONG (120-140 days)"
+    sowing_window: "June (Nursery) to July (Transplanting)"
+    critical_rainfall_threshold_mm: 100.0
+
+  - id: 5
+    name: "Pigeonpea (Tur)"
+    scientific_name: "Cajanus cajan"
+    season: "Kharif"
+    water_requirement: "LOW_MEDIUM"
+    duration_category: "LONG (150-180 days)"
+    sowing_window: "June to First week of July"
+    critical_rainfall_threshold_mm: 35.0
+
+  - id: 6
+    name: "Moong (Green Gram)"
+    scientific_name: "Vigna radiata"
+    season: "Kharif"
+    water_requirement: "LOW"
+    duration_category: "SHORT (60-70 days)"
+    sowing_window: "Mid-June to Early July"
+    critical_rainfall_threshold_mm: 30.0
+
+  - id: 7
+    name: "Urad (Black Gram)"
+    scientific_name: "Vigna mungo"
+    season: "Kharif"
+    water_requirement: "LOW"
+    duration_category: "SHORT (65-75 days)"
+    sowing_window: "Mid-June to Early July"
+    critical_rainfall_threshold_mm: 30.0
+
+  - id: 8
+    name: "Bajra (Pearl Millet)"
+    scientific_name: "Pennisetum glaucum"
+    season: "Kharif"
+    water_requirement: "LOW"
+    duration_category: "SHORT (75-85 days)"
+    sowing_window: "June to Mid-July"
+    critical_rainfall_threshold_mm: 25.0

@@ -1,0 +1,32 @@
+# PROTOTYPE EVENT DETECTION THRESHOLDS
+# WARNING: These are prototype detection values for hackathon engineering testing.
+# They are NOT official India Meteorological Department (IMD) monsoon-onset criteria.
+# All parameters are externally configurable without modifying Python code.
+
+thresholds:
+  onset:
+    onset_rainfall_mm: 20.0
+    onset_window_days: 3
+    description: "Cumulative rainfall over consecutive window to trigger onset evaluation"
+  
+  false_onset:
+    false_onset_dry_spell_days: 7
+    false_onset_lookahead_days: 30
+    description: "Dry spell days within lookahead window following apparent onset trigger"
+
+  break_spell:
+    break_dry_days_threshold: 5
+    daily_rainfall_ceiling_mm: 2.5
+    description: "Consecutive days with rainfall below ceiling during active monsoon"
+
+  heavy_rain:
+    heavy_rain_daily_mm: 64.5
+    very_heavy_rain_daily_mm: 115.5
+    description: "IMD benchmark standard categories for heavy rainfall alerts"
+
+  revival:
+    revival_rainfall_mm: 15.0
+    revival_window_days: 2
+    description: "Rainfall required to break a declared dry/break spell"
+
+disclaimer: "PROTOTYPE DETECTION CRITERIA ONLY - NOT OFFICIAL IMD METEOROLOGICAL STANDARDS"

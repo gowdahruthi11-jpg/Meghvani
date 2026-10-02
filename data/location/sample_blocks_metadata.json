@@ -1,0 +1,35 @@
+[
+  {
+    "id": 1,
+    "name": "Nagpur Rural",
+    "district": "Nagpur",
+    "state": "Maharashtra",
+    "latitude": 21.1458,
+    "longitude": 79.0882,
+    "agro_climatic_zone": "Central Plateau and Hills",
+    "major_crops": ["Soybean", "Cotton", "Paddy"],
+    "source": "DEMO_LOCATION_DATA"
+  },
+  {
+    "id": 2,
+    "name": "Wardha East",
+    "district": "Wardha",
+    "state": "Maharashtra",
+    "latitude": 20.7453,
+    "longitude": 78.6022,
+    "agro_climatic_zone": "Central Plateau and Hills",
+    "major_crops": ["Cotton", "Soybean", "Pigeonpea"],
+    "source": "DEMO_LOCATION_DATA"
+  },
+  {
+    "id": 3,
+    "name": "Amravati Central",
+    "district": "Amravati",
+    "state": "Maharashtra",
+    "latitude": 20.9374,
+    "longitude": 77.7796,
+    "agro_climatic_zone": "Western Plateau and Hills",
+    "major_crops": ["Cotton", "Soybean", "Maize"],
+    "source": "DEMO_LOCATION_DATA"
+  }
+]

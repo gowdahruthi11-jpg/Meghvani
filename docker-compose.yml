@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: meghvani_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=sqlite:///./meghvani.db
+      - ENVIRONMENT=development
+      - DEBUG=true
+    volumes:
+      - ./backend:/app
+      - ./config:/config
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: meghvani_frontend
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_API_BASE_URL=http://backend:8000
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+  # ============================================================
+  # POSTGRESQL / POSTGIS ARCHITECTURE (Deployment Ready)
+  # Uncomment when upgrading from Phase 1 SQLite to Production PostGIS
+  # ============================================================
+  # db:
+  #   image: postgis/postgis:16-3.4
+  #   container_name: meghvani_postgis
+  #   environment:
+  #     POSTGRES_DB: meghvani
+  #     POSTGRES_USER: meghvani_user
+  #     POSTGRES_PASSWORD: meghvani_secure_password
+  #   ports:
+  #     - "5432:5432"
+  #   volumes:
+  #     - postgis_data:/var/lib/postgresql/data
+  #
+  # volumes:
+  #   postgis_data:

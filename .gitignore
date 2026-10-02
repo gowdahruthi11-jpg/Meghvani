@@ -1,0 +1,53 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Environments & Virtual Envs
+.env
+.venv
+env/
+venv/
+ENV/
+backend/venv/
+
+# Database files
+*.db
+*.sqlite3
+meghvani.db
+
+# Node & Frontend dependencies
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing & Coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE & Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# ML artifacts & serialized binaries
+ml/models/*.pkl
+ml/models/*.joblib
+ml/models/*.onnx
+
+# Data raw/processed scratch dumps
+data/raw/*
+!data/raw/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# System & OS files
+.DS_Store
+Thumbs.db

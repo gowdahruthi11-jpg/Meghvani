@@ -1,0 +1,46 @@
+# COMMUNICATION & ALERT ROUTING CONFIGURATION
+# NOTE: All thresholds are PROTOTYPE ALERT THRESHOLDS for demonstration, not scientifically fixed.
+# Actual SMS, Voice, WhatsApp providers are mocked in Phase 1.
+
+providers:
+  sms:
+    type: "MOCK"
+    name: "MockSMSProvider"
+    enabled: true
+  voice:
+    type: "MOCK"
+    name: "MockVoiceProvider"
+    enabled: true
+    simulate_no_answer_rate: 0.35 # Simulated no-answer rate for fallback verification
+    max_retries: 2
+    retry_delay_seconds: 300
+    fallback_channel_on_exhaust: "SMS"
+  whatsapp:
+    type: "MOCK"
+    name: "MockWhatsAppProvider"
+    enabled: true
+
+routing_matrix:
+  # Risk levels: NORMAL, IMPORTANT, HIGH_RISK
+  NORMAL:
+    description: "Standard regular weather updates and routine advisories"
+    channels:
+      - "SMS"
+    probability_threshold_note: "PROTOTYPE ALERT THRESHOLD: Probability < 0.50"
+
+  IMPORTANT:
+    description: "Moderate shift in weather, early break alerts, or recommended sowing delays"
+    channels:
+      - "SMS"
+      - "WHATSAPP"
+    probability_threshold_note: "PROTOTYPE ALERT THRESHOLD: 0.50 <= Probability < 0.75"
+
+  HIGH_RISK:
+    description: "Severe weather, rapid onset, heavy rain warning, or critical break spell"
+    channels:
+      - "VOICE"
+      - "SMS"
+    voice_fallback_enabled: true
+    probability_threshold_note: "PROTOTYPE ALERT THRESHOLD: Probability >= 0.75"
+
+disclaimer: "COMMUNICATION PROVIDERS ARE MOCKED IN PHASE 1. NO REAL SMS, VOICE CALLS, OR WHATSAPP DELIVERED."

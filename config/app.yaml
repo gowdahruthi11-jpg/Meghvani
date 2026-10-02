@@ -1,0 +1,29 @@
+app:
+  name: "Meghvani"
+  version: "1.0.0-phase1"
+  environment: "development"
+  debug: true
+  description: "Hyperlocal Monsoon Onset and Break Prediction System (Block / Village Scale)"
+
+database:
+  url: "sqlite:///./meghvani.db"
+  echo: false
+
+api:
+  prefix: "/api"
+  cors_origins:
+    - "http://localhost:5173"
+    - "http://127.0.0.1:5173"
+    - "http://localhost:3000"
+
+registration:
+  session_ttl_minutes: 60
+  supported_languages:
+    "1": "Hindi"
+    "2": "Marathi"
+    "3": "Kannada"
+    "4": "English"
+
+demo:
+  is_demo_mode: true
+  disclaimer: "DEMO DATA ONLY - Phase 1 Foundation Prototype"
