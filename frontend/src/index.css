@@ -105,3 +105,8 @@ body {
 .meghvani-gis-tiles {
   filter: contrast(95%) brightness(101%) saturate(60%);
 }
+
+/* Inter GIS typography utility for map controls, telemetry, legends & tooltips */
+.font-gis {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+}

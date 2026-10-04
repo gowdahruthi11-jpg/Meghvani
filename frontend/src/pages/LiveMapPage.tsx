@@ -89,23 +89,21 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
         </div>
       </div>
 
-      {/* Two Column Layout: Map & Selected-Region Information Panel */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT: GIS Map */}
-        <div className="lg:col-span-8 bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
-          <div className="min-h-[520px]">
-            <InteractiveWeatherMap
-              blocks={blocks}
-              selectedBlockId={selectedBlock.id}
-              onSelectBlock={handleSelectBlock}
-              onNavigateForecast={(id) => handleNavigate('forecast', id)}
-            />
-          </div>
+      {/* Two Column Layout: Expansive GIS Map (71%) & Selected-Region Telemetry Panel (29%) */}
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+        {/* LEFT: GIS Map (approx 71% on desktop - Hero Focus) */}
+        <div className="w-full lg:w-[71%] bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-2xs">
+          <InteractiveWeatherMap
+            blocks={blocks}
+            selectedBlockId={selectedBlock.id}
+            onSelectBlock={handleSelectBlock}
+            onNavigateForecast={(id) => handleNavigate('forecast', id)}
+          />
         </div>
 
-        {/* RIGHT: Selected Region Information Panel */}
-        <div className="lg:col-span-4 space-y-4">
-          <div className="bg-white p-6 rounded-2xl border border-stone-200/90 shadow-2xs space-y-5">
+        {/* RIGHT: Selected Region Telemetry Information Panel (approx 29% on desktop) */}
+        <div className="w-full lg:w-[29%] space-y-4">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-2xs space-y-5">
             <div className="pb-3 border-b border-stone-100">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-forest-700 block">
                 Region Telemetry
@@ -118,14 +116,14 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
               </span>
             </div>
 
-            {/* Metrics List */}
-            <div className="space-y-3 text-xs">
+            {/* Metrics List with Inter Typography */}
+            <div className="space-y-3 text-xs font-gis">
               <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
                 <span className="text-stone-600 font-semibold flex items-center gap-1.5">
                   <CloudRain className="w-4 h-4 text-forest-700" />
                   <span>Onset Probability</span>
                 </span>
-                <span className="font-extrabold text-forest-900 text-sm">{onsetPct}%</span>
+                <span className="font-extrabold text-forest-900 text-sm font-mono">{onsetPct}%</span>
               </div>
 
               <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
@@ -133,7 +131,7 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
                   <Sun className="w-4 h-4 text-amber-600" />
                   <span>Break Probability</span>
                 </span>
-                <span className="font-extrabold text-stone-900 text-sm">{breakPct}%</span>
+                <span className="font-extrabold text-stone-900 text-sm font-mono">{breakPct}%</span>
               </div>
 
               <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
@@ -141,7 +139,7 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
                   <Droplets className="w-4 h-4 text-rose-600" />
                   <span>False Onset Risk</span>
                 </span>
-                <span className="font-extrabold text-rose-700 text-sm">{foRiskPct}%</span>
+                <span className="font-extrabold text-rose-700 text-sm font-mono">{foRiskPct}%</span>
               </div>
 
               <div className="p-3 rounded-xl bg-stone-50 border border-stone-200/80 flex items-center justify-between">
@@ -149,7 +147,7 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
                   <Droplets className="w-4 h-4 text-sky-600" />
                   <span>Expected Rainfall (7d)</span>
                 </span>
-                <span className="font-extrabold text-stone-900 text-sm">
+                <span className="font-extrabold text-stone-900 text-sm font-mono">
                   {cumRain7 > 0 ? `${cumRain7} mm` : '82.0 mm'}
                 </span>
               </div>
@@ -176,10 +174,10 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
             </div>
 
             {/* Quick Actions */}
-            <div className="pt-2 space-y-2">
+            <div className="pt-2 space-y-2 font-gis">
               <button
                 onClick={() => handleNavigate('advisories')}
-                className="w-full py-2.5 px-4 rounded-xl bg-forest-800 hover:bg-forest-900 text-white font-bold text-xs transition-all flex items-center justify-center space-x-1.5 shadow-xs"
+                className="w-full py-2.5 px-4 rounded-xl bg-forest-800 hover:bg-forest-900 text-white font-bold text-xs transition-all flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
               >
                 <Sprout className="w-4 h-4" />
                 <span>Generate Farmer Advisory</span>
@@ -187,7 +185,7 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
 
               <button
                 onClick={() => handleNavigate('prediction')}
-                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5"
+                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
               >
                 <span>Run Detailed ML Prediction →</span>
               </button>
