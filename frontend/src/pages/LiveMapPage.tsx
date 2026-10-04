@@ -104,12 +104,15 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
 
         {/* RIGHT: Selected Region Telemetry Information Panel (approx 27% on desktop) */}
         <div className="w-full lg:w-[27%] space-y-4">
-          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-2xs space-y-5">
+          <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 border-l-4 border-l-forest-700 shadow-2xs space-y-5 transition-all">
             <div className="pb-3 border-b border-stone-100">
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-forest-700 block">
-                Region Telemetry
-              </span>
-              <h2 className="text-xl font-extrabold text-stone-900 uppercase tracking-tight mt-0.5">
+              <div className="flex items-center justify-between mb-1">
+                <span className="text-[10px] font-black uppercase tracking-wider text-forest-800 bg-forest-50 border border-forest-200 px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                  <span>🎯 ACTIVE MODEL FOCUS</span>
+                </span>
+                <span className="text-[9px] font-mono text-stone-400">0.25° Centroid</span>
+              </div>
+              <h2 className="text-xl font-extrabold text-stone-900 uppercase tracking-tight mt-1">
                 {selectedBlock.name}
               </h2>
               <span className="text-xs text-stone-500 font-medium">

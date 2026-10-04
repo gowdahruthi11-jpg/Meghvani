@@ -15,7 +15,8 @@ import {
   Layers,
   Plus,
   Minus,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { Block, DecisionSupportResult, WeatherObservation } from '../types';
 
@@ -55,6 +56,23 @@ const PROTOTYPE_GRID_MAPPINGS: Record<string, { code: string; gridLat: number; g
   '2': { code: 'BLK002', gridLat: 20.75, gridLon: 78.50 },
   '3': { code: 'BLK003', gridLat: 21.00, gridLon: 77.75 },
 };
+
+export function getDynamicMapInsight(item: BlockMapData, activeLayer: MapLayerType): string {
+  switch (activeLayer) {
+    case 'rainfall':
+      return `7-day cumulative rainfall is ${item.rainfallMm} mm for the ${item.block.name} representative grid (${item.rainfallMm >= 50 ? 'adequate seedbed moisture recharge' : 'marginal antecedent precipitation'}).`;
+    case 'onset':
+      return `Calibrated onset likelihood is ${item.onsetProbPct}% — ${item.onsetProbPct >= 70 ? 'favorable monsoon progression relative to calibrated threshold' : 'moderate progression relative to climatology baseline'}.`;
+    case 'false_onset':
+      return `False-onset risk is ${item.falseOnsetRiskPct}% (${item.falseOnsetRiskPct < 20 ? 'low risk' : item.falseOnsetRiskPct <= 35 ? 'moderate risk' : 'elevated risk'}); ${item.falseOnsetRiskPct < 20 ? 'moisture surge appears sustained with minimal false-start probability' : 'early rainfall signals should be interpreted cautiously before full-field sowing'}.`;
+    case 'dry_break':
+      return `Dry-spell break risk is ${item.dryBreakRiskPct}% (${item.dryBreakRisk}) — persistence index indicates ${item.dryBreakRiskPct < 20 ? 'sustained monsoon flow with minimal hiatus risk' : 'elevated dry spell probability during vegetative emergence'}.`;
+    case 'decision':
+      return `Sowing posture is ${item.decision.replace(/_/g, ' ')} (${item.confidence}): ${item.decisionExplanation}`;
+    default:
+      return `${item.block.name} representative IMD 0.25° gridded observation active.`;
+  }
+}
 
 export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
   blocks,
@@ -136,6 +154,7 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
   }, [blocks, decisionData, weatherData]);
 
   const selectedItem = blockItems.find((item) => item.block.id === selectedBlockId) || blockItems[0];
+  const dynamicInsight = getDynamicMapInsight(selectedItem, activeLayer);
 
   // Initialize Leaflet Map with Clean OSM Tiles
   useEffect(() => {
@@ -199,8 +218,6 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
       // Layer color metrics tailored to active layer
       let fillColor = '#0284C7';
       let strokeColor = '#0369A1';
-      let fillOpacity = isSelected ? 0.15 : 0.06;
-      let badgeValue = `${item.rainfallMm} mm`;
       let pinColor = '#0284C7';
 
       if (activeLayer === 'rainfall') {
@@ -221,7 +238,6 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
           strokeColor = '#0284C7';
           pinColor = '#38BDF8';
         }
-        badgeValue = `${item.rainfallMm} mm`;
       } else if (activeLayer === 'onset') {
         const p = item.onsetProbPct;
         if (p >= 80) {
@@ -241,7 +257,6 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
           strokeColor = '#475569';
           pinColor = '#64748B';
         }
-        badgeValue = `${item.onsetProbPct}%`;
       } else if (activeLayer === 'false_onset') {
         const r = item.falseOnsetRiskPct;
         if (r < 20) {
@@ -257,7 +272,6 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
           strokeColor = '#B91C1C';
           pinColor = '#DC2626';
         }
-        badgeValue = `${item.falseOnsetRiskPct}%`;
       } else if (activeLayer === 'dry_break') {
         const b = item.dryBreakRiskPct;
         if (b < 20) {
@@ -269,33 +283,31 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
           strokeColor = '#B45309';
           pinColor = '#D97706';
         }
-        badgeValue = `${b}%`;
       } else if (activeLayer === 'decision') {
         if (item.decision === 'SOW_NOW') {
           fillColor = '#059669';
           strokeColor = '#047857';
           pinColor = '#047857';
-          badgeValue = 'Sow Now';
         } else if (item.decision === 'SOW_PART_NOW') {
           fillColor = '#D97706';
           strokeColor = '#B45309';
           pinColor = '#B45309';
-          badgeValue = 'Sow Part';
         } else {
           fillColor = '#DC2626';
           strokeColor = '#B91C1C';
           pinColor = '#B91C1C';
-          badgeValue = 'Wait';
         }
       }
 
-      // 1. Subtle 0.25° IMD Representative Grid Box (non-obscuring)
+      // 1. SELECTED REGION SPOTLIGHT: Representative IMD Grid Cell Footprint
+      // - Selected Cell: Solid prominent border + Translucent fill (geography underneath clearly visible)
+      // - Non-Selected Cells: Subdued dashed line with minimal fill
       const rect = L.rectangle(bounds, {
         color: isSelected ? strokeColor : '#94A3B8',
-        weight: isSelected ? 1.6 : 0.7,
+        weight: isSelected ? 2.4 : 0.8,
         dashArray: isSelected ? undefined : '3, 4',
-        fillColor,
-        fillOpacity,
+        fillColor: isSelected ? fillColor : '#E2E8F0',
+        fillOpacity: isSelected ? 0.22 : 0.04,
       });
 
       rect.on('click', () => {
@@ -304,27 +316,52 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
 
       rect.addTo(layerGroup);
 
-      // 2. Compact Collision-Aware Markers:
-      // - Selected Region: Slightly larger marker with pulse + compact micro-badge
-      // - Other Regions: Small 10px marker point only (zero label collision with map geography)
+      // 2. SELECTED CENTROID SPOTLIGHT & COLLISION-FREE MARKERS:
+      // - Selected Centroid: Radar pulse ring + Prominent Pin + Professional "MODEL FOCUS" badge
+      // - Other Centroids: Subdued 9px risk dots providing geographic context without visual competition
       const cleanName = item.block.name.replace(/\s*\([^)]*\)/, '');
       let markerHtml: string;
 
       if (isSelected) {
         markerHtml = `
           <div class="font-gis relative flex flex-col items-center cursor-pointer select-none" style="transform: translate3d(0,0,0);">
+            <!-- Pulsing Radar Centroid Dot -->
             <div class="relative flex items-center justify-center">
-              <div class="absolute -inset-1 rounded-full animate-ping opacity-40" style="background-color: ${pinColor}"></div>
-              <div class="w-3 h-3 rounded-full border-2 border-white shadow-md ring-2 ring-forest-800" style="background-color: ${pinColor}"></div>
+              <div class="absolute -inset-2 rounded-full animate-ping opacity-40" style="background-color: ${pinColor}"></div>
+              <div class="w-3.5 h-3.5 rounded-full border-2 border-white shadow-md ring-2 ring-forest-800" style="background-color: ${pinColor}"></div>
             </div>
-            <div class="mt-1 px-1.5 py-0.5 rounded text-[9px] font-extrabold tracking-tight shadow-sm flex items-center gap-1 bg-stone-900 text-white border border-stone-700 whitespace-nowrap">
-              <span>● ${cleanName}</span>
+            <!-- Professional MODEL FOCUS Spotlight Badge -->
+            <div class="mt-1 flex flex-col items-center shadow-md rounded-md overflow-hidden border border-forest-800 bg-stone-900 text-white">
+              <div class="px-2 py-0.5 bg-forest-800 text-[8px] font-black uppercase tracking-wider text-emerald-300 flex items-center gap-1 w-full justify-center">
+                <span>🎯 MODEL FOCUS</span>
+              </div>
+              <div class="px-2 py-0.5 text-center whitespace-nowrap">
+                <span class="text-[10px] font-extrabold text-white">${cleanName}</span>
+                <span class="text-stone-400 mx-1">·</span>
+                <span class="text-emerald-400 font-mono text-[10px] font-bold">
+                  ${
+                    activeLayer === 'rainfall'
+                      ? `${item.rainfallMm} mm`
+                      : activeLayer === 'onset'
+                      ? `${item.onsetProbPct}%`
+                      : activeLayer === 'false_onset'
+                      ? `${item.falseOnsetRiskPct}%`
+                      : activeLayer === 'dry_break'
+                      ? `${item.dryBreakRiskPct}%`
+                      : item.decision === 'SOW_NOW'
+                      ? 'Sow Now'
+                      : item.decision === 'SOW_PART_NOW'
+                      ? 'Sow Part'
+                      : 'Wait'
+                  }
+                </span>
+              </div>
             </div>
           </div>
         `;
       } else {
         markerHtml = `
-          <div class="font-gis relative flex items-center justify-center cursor-pointer group select-none" style="transform: translate3d(0,0,0);">
+          <div class="font-gis relative flex items-center justify-center cursor-pointer group select-none opacity-60 hover:opacity-100 transition-opacity" style="transform: translate3d(0,0,0);">
             <div class="w-2.5 h-2.5 rounded-full border border-white shadow-xs group-hover:scale-125 transition-transform duration-150" style="background-color: ${pinColor}"></div>
           </div>
         `;
@@ -333,15 +370,15 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
       const customIcon = L.divIcon({
         html: markerHtml,
         className: 'climate-gis-marker',
-        iconSize: isSelected ? [90, 32] : [14, 14],
-        iconAnchor: isSelected ? [45, 6] : [7, 7],
+        iconSize: isSelected ? [140, 48] : [14, 14],
+        iconAnchor: isSelected ? [70, 7] : [7, 7],
       });
 
       const marker = L.marker([item.block.latitude, item.block.longitude], {
         icon: customIcon,
       });
 
-      // 3. Compact 2-Line Tooltip (No Large Obscuring Popup)
+      // 3. Compact 2-Line Tooltip (No Obscuring Cards)
       marker.bindTooltip(`
         <div class="font-gis" style="font-size: 11px; padding: 2px 6px; line-height: 1.35; text-align: center;">
           <div style="font-weight: 800; color: #0c0a09; font-size: 11px;">${cleanName}</div>
@@ -619,7 +656,7 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 2. UNCLUTTERED MAP VIEWPORT                                               */}
+      {/* 2. UNCLUTTERED MAP VIEWPORT WITH SELECTED REGION SPOTLIGHT                */}
       {/* ========================================================================= */}
       <div
         className={`relative w-full ${
@@ -756,14 +793,34 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
       </div>
 
       {/* ========================================================================= */}
-      {/* 3. BOTTOM DATA & CARTOGRAPHIC HONESTY TELEMETRY BAR                       */}
+      {/* 3. DYNAMIC MAP INSIGHT STRIP (Synthesized from Real Model Data)           */}
+      {/* ========================================================================= */}
+      {!isPreview && (
+        <div className="font-gis px-3.5 py-2.5 rounded-xl bg-forest-50/90 border border-forest-200/90 flex items-start gap-2.5 text-xs shadow-2xs">
+          <div className="p-1 rounded-md bg-forest-800 text-white shrink-0 mt-0.5">
+            <Sparkles className="w-3.5 h-3.5 text-emerald-300" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-[10px] font-black uppercase tracking-wider text-forest-900 flex items-center gap-1.5">
+              <span>Map Decision Insight</span>
+              <span className="text-forest-600 font-semibold">({selectedItem.block.name} • {activeLayer.replace(/_/g, ' ').toUpperCase()})</span>
+            </div>
+            <p className="text-stone-700 text-xs mt-0.5 leading-relaxed font-medium">
+              {dynamicInsight}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 4. BOTTOM DATA & CARTOGRAPHIC HONESTY TELEMETRY BAR                       */}
       {/* ========================================================================= */}
       {!isPreview && (
         <div className="font-gis px-3.5 py-2 bg-stone-50/90 border border-stone-200/80 rounded-xl flex flex-wrap items-center justify-between gap-2 text-[10px] text-stone-500">
           <div className="flex items-center gap-1.5">
             <Info className="w-3 h-3 text-forest-700 shrink-0" />
             <span>
-              <strong>Representative IMD grid mapping:</strong> 0.25° centroid-to-cell mapping; administrative block boundaries not yet integrated.
+              <strong>Model Coverage:</strong> Block-selected, representative-grid model mapping (0.25° centroid) — administrative block boundaries not yet integrated.
             </span>
           </div>
           <div className="flex items-center gap-2">
@@ -774,7 +831,7 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
             <span>•</span>
             <span className="text-stone-400 font-medium">IMD 0.25° grid</span>
             <span>•</span>
-            <span className="text-stone-400 font-medium">EPSG:4326</span>
+            <span className="text-stone-400 font-medium">EPSG:4326 (WGS84)</span>
           </div>
         </div>
       )}
