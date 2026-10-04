@@ -16,6 +16,7 @@ import {
 import { api } from '../services/api';
 import { Block, AdvisoryResult, DecisionSupportResult, WeatherObservation } from '../types';
 import { FarmerMessageCard } from '../components/FarmerMessageCard';
+import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 
 interface AdvisoriesPageProps {
   blocks: Block[];
@@ -25,23 +26,26 @@ interface AdvisoriesPageProps {
 }
 
 export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
-  blocks,
-  selectedBlockId,
-  onSelectBlockId,
+  blocks: propBlocks,
+  selectedBlockId: propBlockId,
+  onSelectBlockId: propSetBlockId,
   onNavigateTab,
 }) => {
+  const {
+    canonical,
+    selectedBlock,
+    setSelectedBlockId,
+    blocks,
+  } = useCanonicalPrediction();
+
+  const handleSelectBlock = (id: number) => {
+    setSelectedBlockId(id);
+    if (propSetBlockId) propSetBlockId(id);
+  };
+
   const [selectedCrop, setSelectedCrop] = useState<string>('soybean');
   const [advisory, setAdvisory] = useState<AdvisoryResult | null>(null);
-  const [decision, setDecision] = useState<DecisionSupportResult | null>(null);
-  const [weatherObs, setWeatherObs] = useState<WeatherObservation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
-
-  const selectedBlock =
-    blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
-      id: 1,
-      name: 'Nagpur Rural (Nagpur)',
-      district: 'Nagpur',
-    };
 
   const blockCode = selectedBlock.id === 1 ? 'BLK001' : selectedBlock.id === 2 ? 'BLK002' : 'BLK003';
 
@@ -49,14 +53,8 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
     const load = async () => {
       setLoading(true);
       try {
-        const [adv, dec, w] = await Promise.all([
-          api.getBlockAdvisory(blockCode, selectedCrop, 'mr').catch(() => null),
-          api.getFalseOnsetDecision(blockCode).catch(() => null),
-          api.getWeather(selectedBlockId).catch(() => []),
-        ]);
+        const adv = await api.getBlockAdvisory(blockCode, selectedCrop, 'mr').catch(() => null);
         setAdvisory(adv);
-        setDecision(dec);
-        setWeatherObs(w);
       } catch (e) {
         console.warn('Advisory loading error:', e);
       } finally {
@@ -64,11 +62,10 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
       }
     };
     load();
-  }, [selectedBlockId, blockCode, selectedCrop]);
+  }, [blockCode, selectedCrop]);
 
-  const recent7 = weatherObs.slice(-7);
-  const cumRain7 = Math.round(recent7.reduce((sum, o) => sum + (o.rainfall_mm || 0), 0) * 10) / 10;
-  const decisionPosture = decision?.decision || 'SOW_NOW';
+  const cumRain7 = canonical.cumRain7d;
+  const decisionPosture = canonical.sowingPosture;
 
   return (
     <div className="space-y-6 pb-12">
@@ -93,25 +90,42 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
           </div>
         </div>
 
-        {/* Crop Selector Tabs */}
-        <div className="flex items-center space-x-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold self-start sm:self-auto">
-          {[
-            { id: 'soybean', label: 'Soybean (सोयाबीन)' },
-            { id: 'cotton', label: 'Cotton (कापूस)' },
-            { id: 'pigeonpea', label: 'Tur / Arhar (तूर)' },
-          ].map((c) => (
-            <button
-              key={c.id}
-              onClick={() => setSelectedCrop(c.id)}
-              className={`px-3 py-1.5 rounded-lg transition-all ${
-                selectedCrop === c.id
-                  ? 'bg-white text-forest-900 font-extrabold shadow-2xs border border-stone-200'
-                  : 'text-stone-600 hover:text-stone-900'
-              }`}
+        {/* Location & Crop Selector Tabs */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center space-x-2 text-xs">
+            <span className="text-stone-500 font-semibold">Active Block:</span>
+            <select
+              value={selectedBlock.id}
+              onChange={(e) => handleSelectBlock(Number(e.target.value))}
+              className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 font-bold text-stone-900"
             >
-              {c.label}
-            </button>
-          ))}
+              {blocks.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="flex items-center space-x-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold self-start sm:self-auto">
+            {[
+              { id: 'soybean', label: 'Soybean (सोयाबीन)' },
+              { id: 'cotton', label: 'Cotton (कापूस)' },
+              { id: 'pigeonpea', label: 'Tur / Arhar (तूर)' },
+            ].map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setSelectedCrop(c.id)}
+                className={`px-3 py-1.5 rounded-lg transition-all ${
+                  selectedCrop === c.id
+                    ? 'bg-white text-forest-900 font-extrabold shadow-2xs border border-stone-200'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+              >
+                {c.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -167,21 +181,25 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs">
             <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
               <span className="font-extrabold text-stone-900 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
-                <span>Adequate Soil Moisture</span>
+                <CheckCircle2 className={`w-4 h-4 ${cumRain7 >= 25 ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <span>Soil Moisture Status</span>
               </span>
               <p className="text-stone-600 text-[11px] leading-relaxed">
-                Antecedent rainfall ({cumRain7 > 0 ? `${cumRain7} mm` : '82.0 mm'} / 7d) provides sufficient seedbed moisture for germination.
+                {cumRain7 === 0
+                  ? `No rainfall recorded during the previous 7 days across ${selectedBlock.name}. Soil moisture remains depleted.`
+                  : cumRain7 < 25
+                  ? `Low antecedent rainfall (${cumRain7} mm / 7d) recorded across ${selectedBlock.name}. Pre-monsoon showers insufficient for full germination.`
+                  : `Adequate antecedent rainfall (${cumRain7} mm / 7d) provides sufficient seedbed moisture for germination.`}
               </p>
             </div>
 
             <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200/80 space-y-1">
               <span className="font-extrabold text-stone-900 flex items-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                <CheckCircle2 className={`w-4 h-4 ${canonical.falseOnsetRisk <= 25 ? 'text-emerald-600' : 'text-amber-600'}`} />
                 <span>Loss Ratio Economic Boundary</span>
               </span>
               <p className="text-stone-600 text-[11px] leading-relaxed">
-                Modeled false-onset risk is below crop loss ratio P* = 0.17 (Reseeding ₹4,800/ha vs Delay ₹800/ha).
+                Modeled false-onset risk is {canonical.falseOnsetRisk}% (evaluated against crop loss ratio P* = 0.17: Reseeding ₹4,800/ha vs Delay ₹800/ha).
               </p>
             </div>
 
@@ -202,7 +220,7 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
       <div>
         <FarmerMessageCard
           farmerName="Ramesh Patil"
-          village="Nagpur Rural"
+          village={selectedBlock.name}
           crop={selectedCrop.toUpperCase()}
           decision={decisionPosture as any}
           messageMr={

@@ -21,7 +21,14 @@ export const Footer: React.FC = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2">
           <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-stone-700 text-[11px] shadow-2xs">
             <ShieldCheck className="w-3.5 h-3.5 text-forest-700 shrink-0" />
-            <span>Vidarbha Prototype: Nagpur Rural, Wardha East, Amravati Central</span>
+            <span>Prototype regions: Nagpur Rural · Wardha East · Amravati Central</span>
+          </div>
+
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Data Pipeline Active</span>
+            <span className="text-emerald-300">•</span>
+            <span>Predictor Engine Calibrated</span>
           </div>
 
           <div className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-[11px]">

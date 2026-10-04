@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { api } from '../services/api';
 import { BaselineModelMetadata, FeatureContribution, Block } from '../types';
+import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 
 interface ExplainableAIPageProps {
   blocks: Block[];
@@ -77,20 +78,26 @@ const FEATURE_LABEL_MAP: Record<string, { label: string; desc: string; domain: s
 };
 
 export const ExplainableAIPage: React.FC<ExplainableAIPageProps> = ({
-  blocks,
-  selectedBlockId,
-  onSelectBlockId,
+  blocks: propBlocks,
+  selectedBlockId: propBlockId,
+  onSelectBlockId: propSetBlockId,
   onNavigateTab,
 }) => {
+  const {
+    canonical,
+    selectedBlock,
+    setSelectedBlockId,
+    blocks,
+  } = useCanonicalPrediction();
+
+  const handleSelectBlock = (id: number) => {
+    setSelectedBlockId(id);
+    if (propSetBlockId) propSetBlockId(id);
+  };
+
   const [metadata, setMetadata] = useState<BaselineModelMetadata | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [filterDomain, setFilterDomain] = useState<string>('ALL');
-
-  const selectedBlock =
-    blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
-      id: 1,
-      name: 'Nagpur Rural (Nagpur)',
-    };
 
   useEffect(() => {
     const load = async () => {
@@ -164,8 +171,8 @@ export const ExplainableAIPage: React.FC<ExplainableAIPageProps> = ({
           <div className="flex items-center space-x-2 text-xs">
             <span className="text-stone-500 font-semibold">Active Block:</span>
             <select
-              value={selectedBlockId}
-              onChange={(e) => onSelectBlockId(Number(e.target.value))}
+              value={selectedBlock.id}
+              onChange={(e) => handleSelectBlock(Number(e.target.value))}
               className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 font-bold text-stone-900"
             >
               {blocks.map((b) => (
@@ -189,9 +196,9 @@ export const ExplainableAIPage: React.FC<ExplainableAIPageProps> = ({
           <div className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex flex-col justify-between">
             <div>
               <span className="text-[10px] font-black uppercase text-stone-400 block">Step 1</span>
-              <span className="font-extrabold text-stone-900 text-sm block mt-0.5">Prediction</span>
+              <span className="font-extrabold text-stone-900 text-sm block mt-0.5">Prediction Target</span>
               <p className="text-[11px] text-stone-500 mt-1">
-                P(False Onset) = 18% evaluated for {selectedBlock.name}
+                Explanation for: False Onset Risk — {canonical.falseOnsetRisk}% ({selectedBlock.name})
               </p>
             </div>
             <div className="mt-2 text-forest-700 font-bold text-[10px]">● Supervised Logistic</div>
@@ -240,11 +247,11 @@ export const ExplainableAIPage: React.FC<ExplainableAIPageProps> = ({
         <div className="flex items-center space-x-2">
           <Sparkles className="w-5 h-5 text-amber-300" />
           <h3 className="font-extrabold text-base text-white">
-            Human-Readable Model Synthesis
+            Human-Readable Model Synthesis · {selectedBlock.name}
           </h3>
         </div>
         <p className="text-sm text-forest-100 leading-relaxed font-sans">
-          "{top1} and {top2} are currently the strongest statistical drivers for the false-onset risk in {selectedBlock.name}. High cumulative rainfall over the preceding 14 days acts as a protective buffer, substantially lowering the modeled likelihood of an abrupt break."
+          "{canonical.postureExplanation} {top1} and {top2} are currently the primary statistical drivers for the {canonical.falseOnsetRisk}% false-onset risk score. Current sowing posture: {canonical.sowingPosture.replace(/_/g, ' ')}."
         </p>
         <span className="text-[11px] text-forest-300 block pt-1">
           Automated translation grounded in standardized model coefficients.

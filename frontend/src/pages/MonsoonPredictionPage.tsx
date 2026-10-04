@@ -15,8 +15,8 @@ import {
   ShieldCheck,
   Compass
 } from 'lucide-react';
-import { api } from '../services/api';
-import { Block, FalseOnsetForecastResponse, DecisionSupportResult, MultiEventForecastResponse } from '../types';
+import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
+import { Block } from '../types';
 
 interface MonsoonPredictionPageProps {
   blocks: Block[];
@@ -31,64 +31,30 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
   onSelectBlockId,
   onNavigateTab,
 }) => {
-  const [horizon, setHorizon] = useState<number>(7);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [forecast, setForecast] = useState<FalseOnsetForecastResponse | null>(null);
-  const [multiEvent, setMultiEvent] = useState<MultiEventForecastResponse | null>(null);
-  const [decision, setDecision] = useState<DecisionSupportResult | null>(null);
-  const [hasRun, setHasRun] = useState<boolean>(true);
+  const {
+    canonical,
+    forecastHorizon,
+    setForecastHorizon,
+    setSelectedBlockId,
+    loading,
+    runPrediction,
+  } = useCanonicalPrediction();
 
-  const selectedBlock =
-    blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
-      id: 1,
-      name: 'Nagpur Rural (Nagpur)',
-      district: 'Nagpur',
-    };
-
-  const blockCode = selectedBlock.id === 1 ? 'BLK001' : selectedBlock.id === 2 ? 'BLK002' : 'BLK003';
-
-  const runPrediction = async () => {
-    setLoading(true);
-    try {
-      const [fc, dec, me] = await Promise.all([
-        api.getFalseOnsetForecast(blockCode),
-        api.getFalseOnsetDecision(blockCode),
-        api.getMultiEventForecast(blockCode, horizon).catch(() => null),
-      ]);
-      setForecast(fc);
-      setDecision(dec);
-      setMultiEvent(me);
-      setHasRun(true);
-    } catch (e) {
-      console.error('Prediction inference error:', e);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectBlock = (id: number) => {
+    setSelectedBlockId(id);
+    if (onSelectBlockId) onSelectBlockId(id);
   };
 
-  useEffect(() => {
-    runPrediction();
-  }, [selectedBlockId, horizon]);
+  const selectedBlock = canonical;
+  const horizon = forecastHorizon;
 
-  // Calibrated Real Probabilities from Multi-Event ML Suite
-  const onsetPct = multiEvent?.prob_onset !== undefined
-    ? Math.round(multiEvent.prob_onset * 100)
-    : 72;
-  const breakPct = multiEvent?.prob_break !== undefined
-    ? Math.round(multiEvent.prob_break * 100)
-    : (forecast?.probability !== undefined ? Math.round(forecast.probability * 100) : 18);
-  const heavyRainPct = multiEvent?.prob_heavy_rain !== undefined
-    ? Math.round(multiEvent.prob_heavy_rain * 100)
-    : 8;
-  const falseOnsetPct = multiEvent?.prob_false_onset !== undefined
-    ? Math.round(multiEvent.prob_false_onset * 100)
-    : (forecast?.probability !== undefined ? Math.round(forecast.probability * 100) : 5);
-
-  const confidencePct = multiEvent?.confidence !== undefined
-    ? Math.round(multiEvent.confidence * 100)
-    : 85;
-
-  const decisionPosture = decision?.decision || 'SOW_NOW';
+  const onsetPct = canonical.onsetProbability;
+  const breakPct = canonical.breakProbability;
+  const heavyRainPct = canonical.heavyRainProbability;
+  const falseOnsetPct = canonical.falseOnsetRisk;
+  const confidencePct = canonical.confidenceScorePct;
+  const decisionPosture = canonical.sowingPosture;
+  const hasRun = true;
 
   return (
     <div className="space-y-6 pb-12">
@@ -138,8 +104,8 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
               Block / Taluka
             </label>
             <select
-              value={selectedBlockId}
-              onChange={(e) => onSelectBlockId(Number(e.target.value))}
+              value={selectedBlock.blockId || selectedBlockId}
+              onChange={(e) => handleSelectBlock(Number(e.target.value))}
               className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-300 text-xs font-bold text-stone-900 focus:outline-none focus:border-forest-600"
             >
               {blocks.map((b) => (
@@ -157,12 +123,14 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
             </label>
             <select
               value={horizon}
-              onChange={(e) => setHorizon(Number(e.target.value))}
-              className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-300 text-xs font-bold text-stone-900 focus:outline-none focus:border-forest-600"
+              onChange={(e) => {
+                const val = Number(e.target.value);
+                setForecastHorizon(val === 7 ? 7 : val === 30 ? 30 : 15);
+              }}
+              className="w-full p-2.5 rounded-xl bg-stone-50 border border-stone-300 text-xs font-bold text-stone-900 focus:outline-none focus:border-forest-600 cursor-pointer"
             >
               <option value={7}>7 Days (Primary)</option>
-              <option value={14}>14 Days (Subseasonal)</option>
-              <option value={21}>21 Days (Extended)</option>
+              <option value={15}>15 Days (Subseasonal)</option>
               <option value={30}>30 Days (Monthly Outlook)</option>
             </select>
           </div>
@@ -179,6 +147,21 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
             </button>
           </div>
         </div>
+
+        {/* Dynamic Multi-Stage Loading Banner */}
+        {loading && (
+          <div className="mt-4 p-3.5 rounded-xl bg-stone-50 border border-stone-200/90 text-xs text-stone-700 space-y-1.5 animate-pulse">
+            <div className="font-bold flex items-center gap-2 text-forest-800">
+              <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+              <span>Running calibrated monsoon prediction...</span>
+            </div>
+            <div className="text-[11px] text-stone-500 flex flex-wrap gap-4 pl-5">
+              <span>● Loading rainfall telemetry...</span>
+              <span>● Evaluating Platt-calibrated event suite...</span>
+              <span>● Calculating feature contributions...</span>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Main Result Section */}
@@ -190,7 +173,7 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
               <div>
                 <div className="flex items-center gap-2 mb-2">
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-forest-700 text-forest-100 border border-forest-600 uppercase tracking-wider">
-                    Monsoon Outlook · {selectedBlock.name}
+                    Monsoon Outlook · {selectedBlock.blockName}
                   </span>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400 text-forest-950">
                     Confidence: {confidencePct}% (Platt Calibrated)

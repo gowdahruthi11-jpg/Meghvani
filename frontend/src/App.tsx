@@ -25,6 +25,7 @@ import { ScientificValidationPage } from './pages/ScientificValidationPage';
 
 import { api } from './services/api';
 import { Block } from './types';
+import { CanonicalPredictionProvider } from './context/CanonicalPredictionContext';
 
 export function App() {
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
@@ -90,14 +91,19 @@ export function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#F6F8FB] text-stone-900 font-sans flex">
-      {/* Professional Left Sidebar */}
-      <Sidebar
-        currentTab={currentTab}
-        onSelectTab={setCurrentTab}
-        isOpen={mobileSidebarOpen}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
-      />
+    <CanonicalPredictionProvider
+      selectedBlockId={selectedBlockId}
+      onSelectBlockId={setSelectedBlockId}
+      onNavigateTab={setCurrentTab}
+    >
+      <div className="min-h-screen bg-[#F6F8FB] text-stone-900 font-sans flex">
+        {/* Professional Left Sidebar */}
+        <Sidebar
+          currentTab={currentTab}
+          onSelectTab={setCurrentTab}
+          isOpen={mobileSidebarOpen}
+          onCloseMobile={() => setMobileSidebarOpen(false)}
+        />
 
       {/* Main Content Area (Offset by Sidebar on Desktop) */}
       <div className="flex-1 flex flex-col min-w-0 lg:pl-64">
@@ -185,6 +191,7 @@ export function App() {
         <Footer />
       </div>
     </div>
+    </CanonicalPredictionProvider>
   );
 }
 

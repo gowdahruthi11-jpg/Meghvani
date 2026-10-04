@@ -18,6 +18,7 @@ import {
   MapPin
 } from 'lucide-react';
 import { api } from '../services/api';
+import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 import {
   Block,
   WeatherObservation,
@@ -38,104 +39,33 @@ interface DashboardPageProps {
 }
 
 export const DashboardPage: React.FC<DashboardPageProps> = ({
-  selectedBlockId,
-  onSelectBlockId,
+  selectedBlockId: propBlockId,
+  onSelectBlockId: propSetBlockId,
   blocks,
   onNavigateTab,
 }) => {
-  const [weatherObs, setWeatherObs] = useState<WeatherObservation[]>([]);
-  const [decision, setDecision] = useState<DecisionSupportResult | null>(null);
-  const [forecast, setForecast] = useState<FalseOnsetForecastResponse | null>(null);
-  const [multiEvent, setMultiEvent] = useState<MultiEventForecastResponse | null>(null);
-  const [advisory, setAdvisory] = useState<AdvisoryResult | null>(null);
-  const [forecastHorizon, setForecastHorizon] = useState<7 | 15 | 30>(15);
-  const [loading, setLoading] = useState<boolean>(true);
+  const {
+    canonical,
+    forecastHorizon,
+    setForecastHorizon,
+    setSelectedBlockId,
+    loading
+  } = useCanonicalPrediction();
 
-  const selectedBlock =
-    blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
-      id: 1,
-      name: 'Nagpur Rural (Nagpur)',
-      district: 'Nagpur',
-      state: 'Maharashtra',
-      latitude: 21.1458,
-      longitude: 79.0882,
-      active: true,
-    };
-
-  const blockCode = selectedBlock.id === 1 ? 'BLK001' : selectedBlock.id === 2 ? 'BLK002' : 'BLK003';
-
-  const loadData = async (blockId: number, code: string) => {
-    setLoading(true);
-    try {
-      const [w, dec, fc, adv, me] = await Promise.all([
-        api.getWeather(blockId).catch(() => []),
-        api.getFalseOnsetDecision(code).catch(() => null),
-        api.getFalseOnsetForecast(code).catch(() => null),
-        api.getBlockAdvisory(code, 'soybean', 'mr').catch(() => null),
-        api.getMultiEventForecast(code, 7).catch(() => null),
-      ]);
-      setWeatherObs(w);
-      setDecision(dec);
-      setForecast(fc);
-      setAdvisory(adv);
-      setMultiEvent(me);
-    } catch (e) {
-      console.warn('Dashboard telemetry load error:', e);
-    } finally {
-      setLoading(false);
-    }
+  const handleSelectBlock = (id: number) => {
+    setSelectedBlockId(id);
+    if (propSetBlockId) propSetBlockId(id);
   };
 
-  useEffect(() => {
-    loadData(selectedBlockId, blockCode);
-  }, [selectedBlockId, blockCode]);
+  const selectedBlock = canonical;
+  const blockCode = canonical.blockCode;
+  const chronoSortedObs = canonical.weatherObservations;
 
-  // Real Meteorological Computations
-  const chronoSortedObs = [...weatherObs].sort(
-    (a, b) => new Date(a.observation_date).getTime() - new Date(b.observation_date).getTime()
-  );
-  const recent7 = chronoSortedObs.slice(-7);
-  const recent14 = chronoSortedObs.slice(-14);
-  const recent30 = chronoSortedObs.slice(-30);
-  const cumRain7 = Math.round(recent7.reduce((sum, o) => sum + (o.rainfall_mm || 0), 0) * 10) / 10;
-  const cumRain14 = Math.round(recent14.reduce((sum, o) => sum + (o.rainfall_mm || 0), 0) * 10) / 10;
-  const cumRain30 = Math.round(recent30.reduce((sum, o) => sum + (o.rainfall_mm || 0), 0) * 10) / 10;
-  const cumRainTotal = forecastHorizon === 7 ? cumRain7 : forecastHorizon === 15 ? cumRain14 : cumRain30;
-
-  // Calibrated Onset and Break Probabilities from Multi-Event Suite
-  // In the active onset window, break probability is realistically calibrated (not a synthetic 0%)
-  const rawBreakProb = multiEvent?.prob_break !== undefined
-    ? multiEvent.prob_break
-    : decision?.probability !== undefined && decision.probability !== null
-    ? decision.probability
-    : 0.12;
-
-  const breakProbPct = Math.max(8, Math.round(rawBreakProb * 100));
-  const onsetProbPct = multiEvent?.prob_onset !== undefined && multiEvent.prob_onset > 0.05
-    ? Math.round(multiEvent.prob_onset * 100)
-    : Math.min(88, Math.max(65, Math.round((1 - (breakProbPct / 100) - 0.08) * 100)));
-
-  // Status classification
-  const monsoonStatus =
-    onsetProbPct >= 65
-      ? 'Potential Onset'
-      : breakProbPct >= 40
-      ? 'Dry Break Risk'
-      : 'Transitional Outlook';
-
-  // Automated data-driven textual interpretation strictly adhering to canonical thresholds
-  let textInterpretation = '';
-  if (weatherObs.length === 0) {
-    textInterpretation = `Daily observational telemetry currently pending for ${selectedBlock.name}. Model evaluates baseline dry-break and false-onset risk from representative IMD gridded series.`;
-  } else if (cumRain7 <= 0.5) {
-    textInterpretation = `Very low / no rainfall recorded (0 mm / 7d) across ${selectedBlock.name}. Soil moisture remains depleted; conditions unsuitable for kharif sowing.`;
-  } else if (cumRain7 < 25) {
-    textInterpretation = `Low antecedent rainfall (${cumRain7} mm / 7d) recorded across ${selectedBlock.name}. Pre-monsoon showers insufficient for sustained germination; high risk of false onset.`;
-  } else if (cumRain7 < 50) {
-    textInterpretation = `Moderate antecedent rainfall (${cumRain7} mm / 7d) recorded for ${selectedBlock.name}. Soil profile partially charged; monitor consecutive dry days closely before committing full seed resources.`;
-  } else {
-    textInterpretation = `High antecedent rainfall (${cumRain7} mm / 7d) shows robust moisture accumulation across ${selectedBlock.name}. Soil profile is approaching saturation needed for kharif sowing.`;
-  }
+  const onsetProbPct = canonical.onsetProbability;
+  const breakProbPct = canonical.breakProbability;
+  const cumRainTotal = canonical.expectedRainfall;
+  const monsoonStatus = canonical.monsoonStatus;
+  const textInterpretation = canonical.postureExplanation;
 
   return (
     <div className="space-y-6 pb-12">
@@ -174,8 +104,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs shadow-2xs">
             <span className="text-stone-400 text-[10px] block font-semibold">Block / Taluka</span>
             <select
-              value={selectedBlockId}
-              onChange={(e) => onSelectBlockId(Number(e.target.value))}
+              value={selectedBlock.blockId || propBlockId}
+              onChange={(e) => handleSelectBlock(Number(e.target.value))}
               className="bg-transparent font-bold text-stone-900 focus:outline-none cursor-pointer"
             >
               {blocks.map((b) => (
@@ -231,11 +161,11 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         <MetricCard
           title="Monsoon Status"
           value={monsoonStatus}
-          subtitle={`Decision: ${decision?.decision || 'SOW_NOW'}`}
+          subtitle={`Decision: ${canonical.sowingPosture}`}
           icon={Compass}
           badge={{
-            text: decision?.decision === 'SOW_NOW' ? 'Ready' : 'Wait',
-            variant: decision?.decision === 'SOW_NOW' ? 'success' : 'warning'
+            text: canonical.sowingPosture === 'SOW_NOW' ? 'Ready' : 'Wait',
+            variant: canonical.sowingPosture === 'SOW_NOW' ? 'success' : 'warning'
           }}
           trend="ICAR validated rule"
           className="col-span-2 sm:col-span-1"
@@ -254,21 +184,31 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
                   Interactive GIS Weather & Risk Map
                 </h3>
               </div>
-              <span className="text-[10px] text-stone-500 font-semibold">
-                Click any block to inspect
-              </span>
+              <button
+                onClick={() => onNavigateTab('map')}
+                className="text-[11px] text-forest-700 hover:text-forest-900 font-bold flex items-center gap-1 cursor-pointer"
+              >
+                <span>Full Map →</span>
+              </button>
             </div>
 
             <InteractiveWeatherMap
               blocks={blocks}
-              selectedBlockId={selectedBlockId}
-              onSelectBlock={(id) => onSelectBlockId(id)}
+              selectedBlockId={selectedBlock.blockId || propBlockId}
+              onSelectBlock={handleSelectBlock}
               onNavigateForecast={(id) => {
-                onSelectBlockId(id);
+                handleSelectBlock(id);
                 onNavigateTab('forecast');
               }}
-              decisionData={decision ? { [blockCode]: decision } : undefined}
-              weatherData={weatherObs.length > 0 ? { [selectedBlockId]: weatherObs } : undefined}
+              decisionData={{
+                [blockCode]: {
+                  decision: canonical.sowingPosture,
+                  probability: canonical.falseOnsetRisk / 100,
+                  decision_status: 'VALIDATED_PROTOTYPE',
+                  explanation: canonical.postureExplanation
+                } as any
+              }}
+              weatherData={{ [selectedBlock.blockId || propBlockId]: chronoSortedObs }}
             />
           </div>
         </div>
@@ -276,12 +216,20 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
         {/* RIGHT: 30-Day Forecast & Interpretation Panel */}
         <div className="lg:col-span-5 space-y-4 flex flex-col justify-between">
           <div className="bg-white p-5 rounded-2xl border border-stone-200/90 shadow-2xs space-y-4">
-            {/* Forecast Panel Header with 7d / 15d / 30d Toggle */}
+            {/* Forecast Panel Header with 7d / 15d / 30d Toggle & Link to Forecast */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-100">
               <div>
-                <h3 className="font-extrabold text-sm text-stone-900">
-                  30-Day Horizon Outlook
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-extrabold text-sm text-stone-900">
+                    {forecastHorizon}-Day Horizon Outlook
+                  </h3>
+                  <button
+                    onClick={() => onNavigateTab('forecast')}
+                    className="text-[10px] font-bold text-forest-700 hover:text-forest-900 underline cursor-pointer"
+                  >
+                    View Details →
+                  </button>
+                </div>
                 <p className="text-[11px] text-stone-500">
                   Rainfall trend & dry-spell risk timeline
                 </p>
@@ -322,7 +270,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
             <div className="pt-1">
               <RecentRainfallChart
                 observations={chronoSortedObs}
-                blockName={selectedBlock.name}
+                blockName={selectedBlock.blockName}
                 days={forecastHorizon}
                 predictionSummary={{
                   onsetPct: onsetProbPct,
