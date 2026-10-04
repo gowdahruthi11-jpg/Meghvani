@@ -1,0 +1,88 @@
+# MEGHVANI PHASE 5B: AUTHORITATIVE AGRONOMIC SOURCES REGISTER
+# Machine-readable register of institutional agricultural sources used for rule traceability.
+# Initial Target Geography: Maharashtra (Vidarbha Zone / Nagpur, Wardha, Amravati)
+# Initial Target Crops: Soybean, Cotton, Pigeonpea (Tur)
+
+sources:
+  - source_id: "SRC_CRIDA_DACP_NAGPUR_2020"
+    institution: "ICAR-Central Research Institute for Dryland Agriculture (CRIDA)"
+    title: "District Agriculture Contingency Plan for District: Nagpur, Maharashtra"
+    document_identifier: "CRIDA-DACP-MH-NAGPUR-2020"
+    collaborating_institutions:
+      - "ICAR-National Bureau of Soil Survey and Land Use Planning (NBSS&LUP), Nagpur"
+      - "Department of Agriculture, Government of Maharashtra"
+    version: "2020.1"
+    publication_date: "2020-07"
+    url_or_reference: "http://agricoop.nic.in/sites/default/files/MH18-%20Nagpur.pdf"
+    target_geography: "Maharashtra"
+    agro_climatic_zone: "Vidarbha Zone / Central Plateau and Hills (ACZ VII)"
+    applicable_crops:
+      - "soybean"
+      - "cotton"
+      - "pigeonpea"
+    topics:
+      - "Delayed onset of monsoon"
+      - "Contingency sowing windows"
+      - "Intercropping systems (Soybean + Pigeonpea)"
+      - "In-situ moisture conservation (Broad Bed Furrow / Ridges & Furrows)"
+    verification_status: "VERIFIED"
+
+  - source_id: "SRC_CICR_COTTON_VIDARBHA_2022"
+    institution: "ICAR-Central Institute for Cotton Research (CICR), Nagpur"
+    title: "Cotton Crop Advisory & Contingency Strategies for Rainfed Vidarbha"
+    document_identifier: "ICAR-CICR-TECH-VID-2022"
+    collaborating_institutions:
+      - "Dr. Panjabrao Deshmukh Krishi Vidyapeeth (Dr. PDKV), Akola"
+    version: "2022.1"
+    publication_date: "2022-05"
+    url_or_reference: "https://cicr.icar.gov.in/"
+    target_geography: "Maharashtra"
+    agro_climatic_zone: "Vidarbha Rainfed Cotton Belt"
+    applicable_crops:
+      - "cotton"
+    topics:
+      - "Sowing moisture prerequisites (75-100 mm cumulative rain)"
+      - "Prohibition of dry sowing (Dhul-Vapasa) without guaranteed irrigation"
+      - "Conservation furrows and split planting"
+      - "Contingency intercropping with pigeonpea"
+    verification_status: "VERIFIED"
+
+  - source_id: "SRC_DR_PDKV_AGROMET_PULSES_2023"
+    institution: "Dr. Panjabrao Deshmukh Krishi Vidyapeeth (Dr. PDKV), Akola"
+    title: "Pigeonpea (Tur) Production Technology and Agro-Advisory for Vidarbha"
+    document_identifier: "DR-PDKV-AGROMET-TUR-2023"
+    collaborating_institutions:
+      - "Krishi Vigyan Kendra (KVK) Nagpur / Wardha"
+      - "Gramin Krishi Mausam Seva (GKMS / IMD)"
+    version: "2023.1"
+    publication_date: "2023-05"
+    url_or_reference: "https://www.pdkv.ac.in/"
+    target_geography: "Maharashtra"
+    agro_climatic_zone: "Vidarbha Zone"
+    applicable_crops:
+      - "pigeonpea"
+      - "soybean"
+    topics:
+      - "Sowing moisture threshold (75-100 mm soaking rainfall)"
+      - "Ridge and furrow planting for drainage and moisture conservation"
+      - "Soybean + Pigeonpea intercropping (3:1 / 4:2 ratio)"
+    verification_status: "VERIFIED"
+
+  - source_id: "SRC_MAHA_AGRI_KHARIF_2023"
+    institution: "Department of Agriculture, Government of Maharashtra"
+    title: "Advisory Guidelines for Kharif Sowing in Vidarbha and Marathwada"
+    document_identifier: "MAHA-AGRI-KHARIF-ADV-2023"
+    collaborating_institutions:
+      - "State Agricultural Universities of Maharashtra (PDKV, VNMKV, MPKV)"
+    version: "2023.2"
+    publication_date: "2023-06"
+    url_or_reference: "https://krishi.maharashtra.gov.in/"
+    target_geography: "Maharashtra"
+    applicable_crops:
+      - "soybean"
+      - "cotton"
+      - "pigeonpea"
+    topics:
+      - "Strict advisories against early sowing before 75-100 mm cumulative rain"
+      - "Prevention of seed mortality from post-sowing dry spells"
+    verification_status: "VERIFIED"

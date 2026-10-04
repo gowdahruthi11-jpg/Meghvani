@@ -1,0 +1,51 @@
+# ECONOMIC LOSS-MATRIX CONFIGURATION FOR SOWING DECISION THRESHOLDS
+# Implements economic threshold principle: Break-even probability P* = Cost(delay) / Cost(reseeding).
+# Sowing decisions are evaluated against economic risk rather than arbitrary probability cut-offs.
+
+crops:
+  soybean:
+    crop_name: "Soybean (Glycine max)"
+    cost_reseeding_per_acre_inr: 3200.0
+    cost_reseeding_source: "Dr. PDKV Akola Cost of Cultivation Scheme (2022-23) - Certified seed (30kg @ Rs 80/kg = Rs 2400) + Sowing tractor/labor (Rs 800)"
+    cost_delay_per_acre_day_inr: 160.0
+    delay_window_days: 7
+    cost_delay_total_inr: 1120.0
+    cost_delay_source: "ICAR-CRIDA DACP Vidarbha: estimated 5-7% yield loss per week of delayed sowing after July 1st on 8 quintal baseline @ MSP Rs 4600 = ~Rs 1800/ha (~Rs 1120/acre)"
+    loss_ratio_threshold: 0.35   # 1120.0 / 3200.0 = 0.35
+    buffer_band: 0.05            # SOW_PART_NOW range: [0.30, 0.40]
+
+  cotton:
+    crop_name: "Bt Cotton (Gossypium hirsutum)"
+    cost_reseeding_per_acre_inr: 4500.0
+    cost_reseeding_source: "ICAR-CICR Technical Bulletin: Bt Cotton seed packets (2 @ Rs 850 = Rs 1700) + Dibbling labor & gap-filling (Rs 2800)"
+    cost_delay_per_acre_day_inr: 180.0
+    delay_window_days: 7
+    cost_delay_total_inr: 1260.0
+    cost_delay_source: "ASSUMPTION (Flagged): Estimated yield penalty from delayed vegetative period and boll maturation before terminal drought"
+    loss_ratio_threshold: 0.28   # 1260.0 / 4500.0 = 0.28
+    buffer_band: 0.05            # SOW_PART_NOW range: [0.23, 0.33]
+
+  pigeonpea:
+    crop_name: "Pigeonpea / Tur (Cajanus cajan)"
+    cost_reseeding_per_acre_inr: 2500.0
+    cost_reseeding_source: "Dr. PDKV Pigeonpea Agro-Advisory: Seed (6kg @ Rs 150 = Rs 900) + Field prep & labor (Rs 1600)"
+    cost_delay_per_acre_day_inr: 100.0
+    delay_window_days: 7
+    cost_delay_total_inr: 700.0
+    cost_delay_source: "ASSUMPTION (Flagged): Modest delay penalty due to deep root system and indeterminate flowering habit"
+    loss_ratio_threshold: 0.28   # 700.0 / 2500.0 = 0.28
+    buffer_band: 0.05            # SOW_PART_NOW range: [0.23, 0.33]
+
+default_generic:
+  cost_reseeding_inr: 3000.0
+  cost_reseeding_source: "ASSUMPTION: Generic rainfed Kharif crop reseeding estimate"
+  cost_delay_total_inr: 900.0
+  cost_delay_source: "ASSUMPTION: Generic 7-day delay yield penalty"
+  loss_ratio_threshold: 0.30
+  buffer_band: 0.05
+
+reason_codes:
+  below_threshold: "PROBABILITY_BELOW_LOSS_RATIO"
+  buffer_band: "PROBABILITY_IN_MARGINAL_LOSS_BAND"
+  above_threshold: "PROBABILITY_EXCEEDS_LOSS_RATIO"
+  economic_rationale: "Reseeding cost exceeds delay risk when false-onset probability is high"

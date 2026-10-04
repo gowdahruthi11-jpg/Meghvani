@@ -19,11 +19,24 @@ from app.api.registration import router as registration_router
 from app.api.observations import router as observations_router
 from app.api.alerts import router as alerts_router
 from app.api.weather import router as weather_router
+from app.api.historical import router as historical_router
+from app.api.prediction import router as prediction_router
+from app.api.forecast import router as forecast_router
+from app.api.advisory import router as advisory_router
+from app.api.demo import router as demo_router
+from app.api.validation import (
+    router as validation_router,
+    calibration_router,
+    rolling_origin_router
+)
+
+from app.database.migrations import run_migrations
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup: Ensure tables exist and seed demo data
     Base.metadata.create_all(bind=engine)
+    run_migrations(engine)
     seed_database()
     yield
     # Shutdown logic if needed
@@ -31,7 +44,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title=settings.app_name,
     version=settings.version,
-    description="Hyperlocal Monsoon Onset and Break Prediction System (Block / Village Scale) - Phase 1 Foundation",
+    description="Hyperlocal Monsoon Onset and Break Prediction System (Block / Village Scale) - Phase 1, Phase 2, Phase 3A & Phase 3B Probabilistic Baseline",
     lifespan=lifespan
 )
 
@@ -54,6 +67,14 @@ app.include_router(registration_router, prefix="/api")
 app.include_router(observations_router, prefix="/api")
 app.include_router(alerts_router, prefix="/api")
 app.include_router(weather_router, prefix="/api")
+app.include_router(historical_router, prefix="/api")
+app.include_router(prediction_router, prefix="/api")
+app.include_router(forecast_router, prefix="/api")
+app.include_router(advisory_router, prefix="/api")
+app.include_router(demo_router, prefix="/api")
+app.include_router(validation_router, prefix="/api")
+app.include_router(calibration_router, prefix="/api")
+app.include_router(rolling_origin_router, prefix="/api")
 
 @app.get("/")
 def root():

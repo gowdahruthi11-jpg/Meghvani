@@ -1,0 +1,1116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meghvani — System Architecture</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-primary: #040d1a;
+      --bg-secondary: #07152b;
+      --bg-card: #0b1f3a;
+      --bg-card-hover: #0f2847;
+      --accent-blue: #1d8cf8;
+      --accent-cyan: #00d4ff;
+      --accent-teal: #00c9a7;
+      --accent-indigo: #6c63ff;
+      --accent-amber: #ffb74d;
+      --accent-rose: #f06292;
+      --accent-green: #4caf7d;
+      --accent-purple: #b39ddb;
+      --text-primary: #e8f4fd;
+      --text-secondary: #8fb3cc;
+      --text-muted: #4a6880;
+      --border: #112840;
+      --border-glow: rgba(29, 140, 248, 0.25);
+      --gradient-primary: linear-gradient(135deg, #1d8cf8 0%, #00d4ff 100%);
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(29,140,248,0.06) 0%, transparent 60%),
+        radial-gradient(ellipse 60% 40% at 80% 80%, rgba(0,201,167,0.05) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    .content { position: relative; z-index: 1; }
+    header {
+      background: linear-gradient(180deg, rgba(7,21,43,0.98) 0%, rgba(4,13,26,0.95) 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      backdrop-filter: blur(20px);
+    }
+    .header-inner {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 70px;
+    }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon {
+      width: 40px; height: 40px;
+      background: var(--gradient-primary);
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .logo-text {
+      font-weight: 800; font-size: 1.3rem;
+      background: var(--gradient-primary);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .logo-sub { font-size: 0.65rem; color: var(--text-muted); font-weight: 400; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 2px; }
+    .header-badge {
+      background: rgba(29,140,248,0.12); border: 1px solid rgba(29,140,248,0.3);
+      color: var(--accent-cyan); padding: 6px 16px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.05em;
+    }
+    .nav-tabs {
+      max-width: 1400px; margin: 0 auto; padding: 0 2rem;
+      display: flex; gap: 0; border-bottom: 1px solid var(--border); overflow-x: auto;
+    }
+    .nav-tab {
+      padding: 16px 20px; cursor: pointer; font-size: 0.8rem; font-weight: 600;
+      color: var(--text-muted); border-bottom: 2px solid transparent;
+      transition: all 0.2s; white-space: nowrap; display: flex; align-items: center; gap: 6px;
+    }
+    .nav-tab:hover { color: var(--text-secondary); }
+    .nav-tab.active { color: var(--accent-cyan); border-bottom-color: var(--accent-cyan); }
+    main { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+    .hero { text-align: center; padding: 3rem 1rem 2rem; }
+    .hero-eyebrow {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: rgba(29,140,248,0.08); border: 1px solid rgba(29,140,248,0.2);
+      color: var(--accent-blue); padding: 6px 16px; border-radius: 999px;
+      font-size: 0.75rem; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 1.5rem;
+    }
+    .hero h1 {
+      font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 900; line-height: 1.15; margin-bottom: 1rem;
+      background: linear-gradient(135deg, #e8f4fd 0%, #1d8cf8 50%, #00d4ff 100%);
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .hero p { font-size: 1rem; color: var(--text-secondary); max-width: 650px; margin: 0 auto 2rem; line-height: 1.7; }
+    .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 1rem; margin-bottom: 3rem; }
+    .stat-card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px;
+      padding: 1.2rem 1rem; text-align: center; transition: all 0.3s; cursor: default;
+    }
+    .stat-card:hover { border-color: var(--border-glow); background: var(--bg-card-hover); transform: translateY(-2px); }
+    .stat-num {
+      font-size: 1.9rem; font-weight: 800;
+      background: var(--gradient-primary); -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent; background-clip: text;
+      line-height: 1; margin-bottom: 4px;
+    }
+    .stat-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; }
+    .section { margin-bottom: 3rem; }
+    .section-title {
+      font-size: 1.05rem; font-weight: 700; color: var(--text-primary);
+      margin-bottom: 1.2rem; display: flex; align-items: center; gap: 10px;
+    }
+    .section-title::after { content: ''; flex: 1; height: 1px; background: linear-gradient(90deg, var(--border) 0%, transparent 100%); }
+    .arch-diagram { background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 2rem; overflow-x: auto; }
+    .arch-layers { display: flex; flex-direction: column; gap: 0; min-width: 600px; }
+    .arch-box {
+      border-radius: 14px; padding: 1rem 1.4rem;
+      display: flex; align-items: center; gap: 1rem; border: 1px solid;
+      transition: all 0.3s; cursor: pointer;
+    }
+    .arch-box:hover { transform: translateX(4px); }
+    .arch-box.layer-farmer { background: rgba(0,201,167,0.08); border-color: rgba(0,201,167,0.4); }
+    .arch-box.layer-frontend { background: rgba(108,99,255,0.08); border-color: rgba(108,99,255,0.4); }
+    .arch-box.layer-api { background: rgba(29,140,248,0.08); border-color: rgba(29,140,248,0.4); }
+    .arch-box.layer-services { background: rgba(255,183,77,0.08); border-color: rgba(255,183,77,0.3); }
+    .arch-box.layer-ml { background: rgba(240,98,146,0.08); border-color: rgba(240,98,146,0.4); }
+    .arch-box.layer-db { background: rgba(76,175,125,0.08); border-color: rgba(76,175,125,0.4); }
+    .arch-box.layer-comms { background: rgba(179,157,219,0.08); border-color: rgba(179,157,219,0.4); }
+    .arch-icon { font-size: 1.8rem; width: 48px; text-align: center; flex-shrink: 0; }
+    .arch-info { flex: 1; }
+    .arch-name { font-weight: 700; font-size: 0.9rem; margin-bottom: 2px; }
+    .arch-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; }
+    .arch-tech { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+    .tech-pill { font-size: 0.67rem; padding: 2px 9px; border-radius: 999px; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .arch-connector { display: flex; justify-content: center; align-items: center; padding: 6px 0; position: relative; }
+    .connector-label {
+      background: var(--bg-secondary); padding: 3px 12px; border-radius: 999px;
+      font-size: 0.64rem; font-weight: 600; color: var(--accent-blue);
+      border: 1px solid rgba(29,140,248,0.2); z-index: 1;
+    }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1.2rem; }
+    @media (max-width: 900px) { .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; } }
+    @media (min-width: 900px) and (max-width: 1100px) { .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; } }
+    .card {
+      background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; transition: all 0.3s;
+    }
+    .card:hover { border-color: var(--border-glow); background: var(--bg-card-hover); transform: translateY(-2px); box-shadow: 0 8px 32px rgba(29,140,248,0.08); }
+    .card-header { display: flex; align-items: center; gap: 10px; margin-bottom: 1rem; }
+    .card-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.1rem; flex-shrink: 0; }
+    .card-title { font-weight: 700; font-size: 0.9rem; }
+    .card-subtitle { font-size: 0.72rem; color: var(--text-muted); }
+    .card-body { font-size: 0.8rem; color: var(--text-secondary); line-height: 1.65; }
+    .flow-container { display: flex; align-items: stretch; gap: 0; overflow-x: auto; padding-bottom: 0.5rem; margin-top: 1rem; }
+    .flow-step { flex: 1; min-width: 120px; display: flex; flex-direction: column; align-items: center; }
+    .flow-box {
+      width: 100%; padding: 1rem 0.6rem; border-radius: 12px; text-align: center;
+      font-size: 0.73rem; font-weight: 600; border: 1px solid; transition: all 0.3s; cursor: pointer;
+    }
+    .flow-box:hover { transform: scale(1.04); }
+    .flow-emoji { font-size: 1.4rem; margin-bottom: 5px; display: block; }
+    .flow-label { line-height: 1.3; }
+    .flow-sub { font-size: 0.63rem; font-weight: 400; color: var(--text-muted); margin-top: 3px; }
+    .flow-arrow { display: flex; align-items: center; padding: 0 4px; color: var(--text-muted); font-size: 1.1rem; flex-shrink: 0; }
+    .timeline { position: relative; padding-left: 2.5rem; }
+    .timeline::before { content: ''; position: absolute; left: 10px; top: 0; bottom: 0; width: 2px; background: linear-gradient(180deg, var(--accent-blue) 0%, var(--accent-teal) 50%, var(--border) 100%); }
+    .timeline-item { position: relative; margin-bottom: 1.2rem; display: flex; gap: 1rem; align-items: flex-start; }
+    .timeline-dot { position: absolute; left: -2.1rem; top: 8px; width: 14px; height: 14px; border-radius: 50%; border: 2px solid var(--bg-primary); flex-shrink: 0; }
+    .timeline-dot.done { background: var(--accent-teal); }
+    .timeline-dot.active { background: var(--accent-amber); box-shadow: 0 0 8px var(--accent-amber); }
+    .timeline-dot.pending { background: var(--border); }
+    .timeline-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 1rem 1.2rem; flex: 1; transition: all 0.3s; }
+    .timeline-content:hover { border-color: var(--border-glow); background: var(--bg-card-hover); }
+    .timeline-phase { font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+    .timeline-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 4px; }
+    .timeline-desc { font-size: 0.76rem; color: var(--text-secondary); line-height: 1.5; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 4px; padding: 2px 10px;
+      border-radius: 999px; font-size: 0.65rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.06em; float: right; margin-top: 2px;
+    }
+    .status-badge.done { background: rgba(76,175,125,0.15); color: var(--accent-green); }
+    .status-badge.active { background: rgba(255,183,77,0.15); color: var(--accent-amber); }
+    .status-badge.pending { background: rgba(74,104,128,0.2); color: var(--text-muted); }
+    .api-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .api-table th { text-align: left; padding: 10px 14px; color: var(--text-muted); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.07em; border-bottom: 1px solid var(--border); font-weight: 600; }
+    .api-table td { padding: 10px 14px; border-bottom: 1px solid rgba(17,40,64,0.5); vertical-align: middle; color: var(--text-secondary); }
+    .api-table tr:last-child td { border-bottom: none; }
+    .api-table tr:hover td { background: rgba(29,140,248,0.04); }
+    .method-badge { display: inline-block; padding: 2px 10px; border-radius: 6px; font-size: 0.68rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+    .method-get { background: rgba(76,175,125,0.15); color: var(--accent-green); }
+    .method-post { background: rgba(255,183,77,0.15); color: var(--accent-amber); }
+    .endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--accent-cyan); }
+    .db-entity { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: all 0.3s; }
+    .db-entity:hover { border-color: var(--border-glow); box-shadow: 0 4px 20px rgba(29,140,248,0.08); }
+    .db-entity-header { padding: 10px 14px; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
+    .db-entity-body { padding: 0 14px 10px; }
+    .db-field { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; font-size: 0.72rem; border-bottom: 1px solid rgba(17,40,64,0.5); }
+    .db-field:last-child { border-bottom: none; }
+    .db-field-name { font-family: 'JetBrains Mono', monospace; color: var(--text-secondary); }
+    .db-field-name.pk { color: var(--accent-amber); }
+    .db-field-name.fk { color: var(--accent-cyan); }
+    .db-field-type { font-family: 'JetBrains Mono', monospace; color: var(--text-muted); font-size: 0.65rem; }
+    .threshold-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; }
+    .threshold-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 1.2rem; transition: all 0.3s; }
+    .threshold-card:hover { border-color: var(--border-glow); transform: translateY(-2px); }
+    .threshold-header { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .threshold-emoji { font-size: 1.4rem; }
+    .threshold-name { font-weight: 700; font-size: 0.85rem; }
+    .threshold-rule { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.6; margin-bottom: 8px; }
+    .threshold-value { font-family: 'JetBrains Mono', monospace; font-size: 0.72rem; padding: 4px 10px; border-radius: 8px; display: inline-block; background: rgba(29,140,248,0.1); color: var(--accent-cyan); border: 1px solid rgba(29,140,248,0.2); }
+    .decision-band { display: flex; border-radius: 14px; overflow: hidden; border: 1px solid var(--border); margin-bottom: 1.5rem; }
+    .decision-zone { flex: 1; padding: 1.2rem; text-align: center; border-right: 1px solid var(--border); transition: all 0.3s; }
+    .decision-zone:last-child { border-right: none; }
+    .decision-zone:hover { filter: brightness(1.15); }
+    .decision-zone.sow { background: rgba(76,175,125,0.1); }
+    .decision-zone.partial { background: rgba(255,183,77,0.1); }
+    .decision-zone.wait { background: rgba(240,98,146,0.1); }
+    .decision-label { font-weight: 800; font-size: 0.88rem; margin-bottom: 4px; }
+    .decision-zone.sow .decision-label { color: var(--accent-green); }
+    .decision-zone.partial .decision-label { color: var(--accent-amber); }
+    .decision-zone.wait .decision-label { color: var(--accent-rose); }
+    .decision-range { font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; color: var(--text-muted); }
+    .decision-emoji { font-size: 1.5rem; margin-bottom: 6px; }
+    .stack-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .stack-table tr { border-bottom: 1px solid var(--border); transition: background 0.2s; }
+    .stack-table tr:hover td { background: rgba(29,140,248,0.03); }
+    .stack-table tr:last-child { border-bottom: none; }
+    .stack-table td { padding: 12px 16px; vertical-align: top; }
+    .stack-layer-name { color: var(--text-muted); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; width: 150px; }
+    .stack-tech { display: flex; flex-wrap: wrap; gap: 6px; }
+    .pill { padding: 4px 12px; border-radius: 999px; font-size: 0.72rem; font-weight: 600; font-family: 'JetBrains Mono', monospace; border: 1px solid; }
+    .pill-blue { background: rgba(29,140,248,0.1); color: #64b5f6; border-color: rgba(29,140,248,0.25); }
+    .pill-teal { background: rgba(0,201,167,0.1); color: #4db6ac; border-color: rgba(0,201,167,0.25); }
+    .pill-purple { background: rgba(108,99,255,0.1); color: #9e9eff; border-color: rgba(108,99,255,0.25); }
+    .pill-amber { background: rgba(255,183,77,0.1); color: #ffcc80; border-color: rgba(255,183,77,0.25); }
+    .pill-rose { background: rgba(240,98,146,0.1); color: #f48fb1; border-color: rgba(240,98,146,0.25); }
+    .pill-green { background: rgba(76,175,125,0.1); color: #81c784; border-color: rgba(76,175,125,0.25); }
+    .pill-gray { background: rgba(74,104,128,0.15); color: #90a4ae; border-color: rgba(74,104,128,0.3); }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+    .alert-box { border-radius: 12px; padding: 1rem 1.2rem; font-size: 0.8rem; line-height: 1.6; display: flex; gap: 10px; align-items: flex-start; margin-bottom: 1rem; }
+    .alert-box.warning { background: rgba(255,183,77,0.08); border: 1px solid rgba(255,183,77,0.25); color: #ffcc80; }
+    .alert-box.info { background: rgba(29,140,248,0.07); border: 1px solid rgba(29,140,248,0.2); color: var(--text-secondary); }
+    .alert-icon { font-size: 1rem; flex-shrink: 0; margin-top: 1px; }
+    .sms-flow { display: flex; flex-direction: column; gap: 0; }
+    .sms-line { width: 3px; background: var(--border); flex-shrink: 0; margin-left: 22px; min-height: 16px; }
+    .sms-node { display: flex; align-items: flex-start; gap: 14px; padding: 10px 0; }
+    .sms-dot { width: 20px; height: 20px; border-radius: 50%; background: var(--accent-blue); display: flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 700; flex-shrink: 0; margin-top: 2px; box-shadow: 0 0 0 3px rgba(29,140,248,0.15); }
+    .sms-content { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; flex: 1; }
+    .sms-state { font-size: 0.67rem; font-weight: 700; color: var(--accent-cyan); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 3px; }
+    .sms-msg { font-size: 0.8rem; color: var(--text-secondary); }
+    .sms-reply { font-size: 0.7rem; color: var(--accent-teal); margin-top: 4px; font-family: 'JetBrains Mono', monospace; }
+    .severity-card { border-radius: 14px; padding: 1.3rem; border: 1px solid; transition: all 0.3s; margin-bottom: 0.8rem; }
+    .severity-card:hover { transform: translateY(-2px); }
+    .severity-card.normal { background: rgba(76,175,125,0.08); border-color: rgba(76,175,125,0.35); }
+    .severity-card.important { background: rgba(255,183,77,0.08); border-color: rgba(255,183,77,0.35); }
+    .severity-card.high { background: rgba(240,98,146,0.08); border-color: rgba(240,98,146,0.35); }
+    .severity-name { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .severity-card.normal .severity-name { color: var(--accent-green); }
+    .severity-card.important .severity-name { color: var(--accent-amber); }
+    .severity-card.high .severity-name { color: var(--accent-rose); }
+    .severity-channels { font-size: 0.78rem; color: var(--text-secondary); line-height: 1.7; }
+    .rule-hierarchy { display: flex; flex-direction: column; gap: 10px; }
+    .rule-tier { border-radius: 12px; padding: 1rem 1.2rem; border: 1px solid; display: flex; align-items: center; gap: 14px; transition: all 0.3s; }
+    .rule-tier:hover { transform: translateX(6px); }
+    .rule-tier.validated { background: rgba(76,175,125,0.08); border-color: rgba(76,175,125,0.35); }
+    .rule-tier.review { background: rgba(255,183,77,0.08); border-color: rgba(255,183,77,0.3); }
+    .rule-tier.unvalidated { background: rgba(240,98,146,0.07); border-color: rgba(240,98,146,0.25); }
+    .rule-tier.unavailable { background: rgba(74,104,128,0.08); border-color: rgba(74,104,128,0.25); }
+    .rule-tier-icon { font-size: 1.5rem; width: 36px; text-align: center; }
+    .rule-tier-info { flex: 1; }
+    .rule-tier-name { font-weight: 700; font-size: 0.88rem; margin-bottom: 2px; }
+    .rule-tier.validated .rule-tier-name { color: var(--accent-green); }
+    .rule-tier.review .rule-tier-name { color: var(--accent-amber); }
+    .rule-tier.unvalidated .rule-tier-name { color: var(--accent-rose); }
+    .rule-tier.unavailable .rule-tier-name { color: var(--text-muted); }
+    .rule-tier-desc { font-size: 0.75rem; color: var(--text-secondary); line-height: 1.5; }
+    .rule-count { font-size: 1.4rem; font-weight: 800; }
+    .rule-tier.validated .rule-count { color: var(--accent-green); }
+    .rule-tier.review .rule-count { color: var(--accent-amber); }
+    .rule-tier.unvalidated .rule-count { color: var(--accent-rose); }
+    .rule-tier.unavailable .rule-count { color: var(--text-muted); }
+    footer { border-top: 1px solid var(--border); padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.76rem; margin-top: 4rem; }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .fade-in { animation: fadeInUp 0.4s ease forwards; }
+  </style>
+</head>
+<body>
+<div class="content">
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🌧️</div>
+      <div>
+        <div class="logo-text">MEGHVANI</div>
+        <div class="logo-sub">Hyperlocal Monsoon Prediction System</div>
+      </div>
+    </div>
+    <div class="header-badge">SIH 2026 Prototype</div>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-tabs">
+    <div class="nav-tab active" onclick="showTab('overview',this)">🗺️ Overview</div>
+    <div class="nav-tab" onclick="showTab('layers',this)">🏗️ System Layers</div>
+    <div class="nav-tab" onclick="showTab('dataflow',this)">🔄 Data Flow</div>
+    <div class="nav-tab" onclick="showTab('database',this)">🗄️ Database</div>
+    <div class="nav-tab" onclick="showTab('api',this)">🔌 API Endpoints</div>
+    <div class="nav-tab" onclick="showTab('ml',this)">🤖 ML Pipeline</div>
+    <div class="nav-tab" onclick="showTab('advisory',this)">📋 Advisory Engine</div>
+    <div class="nav-tab" onclick="showTab('communication',this)">📡 Communication</div>
+    <div class="nav-tab" onclick="showTab('phases',this)">📅 Dev Phases</div>
+    <div class="nav-tab" onclick="showTab('stack',this)">⚙️ Tech Stack</div>
+  </div>
+</nav>
+
+<main>
+
+<!-- ══ OVERVIEW ══ -->
+<div id="tab-overview" class="tab-panel active fade-in">
+  <div class="hero">
+    <div class="hero-eyebrow">🌧️ System Architecture</div>
+    <h1>Meghvani<br/>Architecture Blueprint</h1>
+    <p>A full-stack agrometeorological decision-support system that predicts hyperlocal monsoon events at block scale and converts predictions into validated crop-specific sowing advisories for Indian smallholder farmers.</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stat-card"><div class="stat-num" data-target="17">17</div><div class="stat-label">API Routers</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="9">9</div><div class="stat-label">ORM Entities</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="18">18</div><div class="stat-label">ML Features</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="5">5</div><div class="stat-label">Event Types</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="6">6</div><div class="stat-label">Validated Rules</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="166">166</div><div class="stat-label">Tests Passing</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="4">4</div><div class="stat-label">Forecast Horizons</div></div>
+    <div class="stat-card"><div class="stat-num" data-target="18">18</div><div class="stat-label">Frontend Pages</div></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏛️ Layered Architecture</div>
+    <div class="arch-diagram">
+      <div class="arch-layers">
+        <div class="arch-box layer-farmer">
+          <div class="arch-icon">👨‍🌾</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#00c9a7">FARMER INTERFACE LAYER</div>
+            <div class="arch-desc">Farmers interact via SMS keyword "MEGH", missed call, WhatsApp, or IVR voice — no smartphone or data required</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-teal">SMS</span><span class="tech-pill pill-teal">Missed Call</span>
+              <span class="tech-pill pill-teal">WhatsApp</span><span class="tech-pill pill-teal">IVR Voice</span>
+              <span class="tech-pill pill-teal">Hindi / Marathi / Kannada / English</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">Browser HTTP</div></div>
+        <div class="arch-box layer-frontend">
+          <div class="arch-icon">🖥️</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#b39ddb">FRONTEND LAYER — React + Vite + TypeScript</div>
+            <div class="arch-desc">18 pages: officer dashboard, farmer registration simulator, historical analysis, ML baseline review, scientific validation, SIH demo, advisory display, live block map</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-purple">React 18</span><span class="tech-pill pill-purple">Vite</span>
+              <span class="tech-pill pill-purple">TypeScript</span><span class="tech-pill pill-purple">Tailwind CSS</span><span class="tech-pill pill-purple">Lucide Icons</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">REST / JSON · :8000</div></div>
+        <div class="arch-box layer-api">
+          <div class="arch-icon">🔌</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#1d8cf8">API GATEWAY LAYER — FastAPI</div>
+            <div class="arch-desc">17 modular REST routers with Pydantic v2 validation, CORS middleware, lifespan management, Swagger UI at /docs</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-blue">FastAPI</span><span class="tech-pill pill-blue">Pydantic v2</span>
+              <span class="tech-pill pill-blue">Uvicorn</span><span class="tech-pill pill-blue">30+ endpoints</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">Python service calls</div></div>
+        <div class="arch-box layer-services">
+          <div class="arch-icon">⚙️</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#ffb74d">SERVICES LAYER — Business Logic</div>
+            <div class="arch-desc">6 core services: LocationService (PIN→Block), FarmerService, RegistrationService (SMS state machine), WeatherService, AdvisoryService, AlertService (voice fallback)</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-amber">location_service</span><span class="tech-pill pill-amber">farmer_service</span>
+              <span class="tech-pill pill-amber">registration_service</span><span class="tech-pill pill-amber">advisory_service</span><span class="tech-pill pill-amber">alert_service</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">pandas · scikit-learn · joblib</div></div>
+        <div class="arch-box layer-ml">
+          <div class="arch-icon">🤖</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#f06292">ML / SCIENCE LAYER</div>
+            <div class="arch-desc">Historical pipeline → feature engineering (18 causal predictors) → logistic regression → Platt calibration → decision engine → advisory rule framework. Zero data leakage by design.</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-rose">scikit-learn</span><span class="tech-pill pill-rose">pandas</span>
+              <span class="tech-pill pill-rose">numpy</span><span class="tech-pill pill-rose">joblib</span><span class="tech-pill pill-rose">scipy</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">SQLAlchemy 2.0 ORM</div></div>
+        <div class="arch-box layer-db">
+          <div class="arch-icon">🗄️</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#4caf7d">DATABASE LAYER</div>
+            <div class="arch-desc">9 ORM entities: Block, Village, Crop, Farmer, WeatherData, RegistrationSession, FarmerObservation, AlertLog. Idempotent runtime migrations via run_migrations()</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-green">SQLAlchemy 2.0</span><span class="tech-pill pill-green">Alembic</span>
+              <span class="tech-pill pill-green">SQLite (dev)</span><span class="tech-pill pill-green">PostgreSQL+PostGIS (prod)</span>
+            </div>
+          </div>
+        </div>
+        <div class="arch-connector"><div class="connector-label">Provider abstraction</div></div>
+        <div class="arch-box layer-comms">
+          <div class="arch-icon">📡</div>
+          <div class="arch-info">
+            <div class="arch-name" style="color:#b39ddb">COMMUNICATION PROVIDER LAYER</div>
+            <div class="arch-desc">Abstract base with SMS, WhatsApp, Voice, and Missed-Call channels. MockProvider in Phase 1 — real Twilio/Gupshup/Exotel planned for production deployment.</div>
+            <div class="arch-tech">
+              <span class="tech-pill pill-purple">base.py</span><span class="tech-pill pill-purple">sms.py</span>
+              <span class="tech-pill pill-purple">voice.py</span><span class="tech-pill pill-purple">whatsapp.py</span><span class="tech-pill pill-purple">mock_provider.py</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SYSTEM LAYERS ══ -->
+<div id="tab-layers" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">🏗️ System Component Details</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(108,99,255,0.15)">🖥️</div>
+          <div><div class="card-title">Frontend — 18 Pages</div><div class="card-subtitle">React 18 · Vite · TypeScript · Tailwind</div></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:0.77rem;">
+            <span>🏠 LandingPage</span><span>📊 OfficerDashboard</span>
+            <span>📝 FarmerRegistrationSim</span><span>🚨 AlertCenterPage</span>
+            <span>📈 HistoricalAnalysis</span><span>🔬 ScientificValidation</span>
+            <span>📦 PredictionDataset</span><span>🧠 ExplainableAI</span>
+            <span>🤖 BaselineModelPage</span><span>🎯 SIHDemoPage</span>
+            <span>🔮 ForecastPage</span><span>🗺️ LiveMapPage</span>
+            <span>🌾 AdvisoriesPage</span><span>🌦️ MonsoonPrediction</span>
+            <span>👁️ ObservationFeedback</span><span>📐 DataModelPage</span>
+            <span>⚡ SystemStatusPage</span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(29,140,248,0.15)">🔌</div>
+          <div><div class="card-title">API Layer — 17 Routers</div><div class="card-subtitle">FastAPI · Pydantic v2 · all under /api</div></div>
+        </div>
+        <div class="card-body">
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:4px; font-size:0.77rem;">
+            <span>❤️ health</span><span>📍 blocks</span>
+            <span>🏘️ villages</span><span>🌱 crops</span>
+            <span>👤 farmers</span><span>📝 registration</span>
+            <span>👁️ observations</span><span>🚨 alerts</span>
+            <span>🌧️ weather</span><span>📊 historical</span>
+            <span>📦 prediction</span><span>🔮 forecast</span>
+            <span>📋 advisory</span><span>🎯 demo</span>
+            <span>🔬 validation</span><span>📐 calibration</span>
+            <span>🔁 rolling-origin</span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(255,183,77,0.15)">⚙️</div>
+          <div><div class="card-title">Services Layer — 6 Services</div><div class="card-subtitle">Core business logic</div></div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div><strong style="color:#ffb74d">location_service</strong> — PIN-code → Village → Block auto-resolution</div>
+            <div><strong style="color:#ffb74d">farmer_service</strong> — CRUD, consent enforcement, phone masking</div>
+            <div><strong style="color:#ffb74d">registration_service</strong> — SMS conversational state machine</div>
+            <div><strong style="color:#ffb74d">weather_service</strong> — Daily rainfall ingestion and aggregation</div>
+            <div><strong style="color:#ffb74d">advisory_service</strong> — Forecast → decision → rule lookup</div>
+            <div><strong style="color:#ffb74d">alert_service</strong> — Severity routing, voice retry + SMS fallback</div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-icon" style="background:rgba(240,98,146,0.15)">🤖</div>
+          <div><div class="card-title">ML / Science Layer — 10 Modules</div><div class="card-subtitle">Zero data leakage by design</div></div>
+        </div>
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:6px;font-size:0.78rem">
+            <div><span style="color:#f06292">baseline_predictor</span> — Logistic Regression pipeline</div>
+            <div><span style="color:#f06292">climatology</span> — unconditional base-rate</div>
+            <div><span style="color:#f06292">calibration</span> — Platt scaling (sigmoid)</div>
+            <div><span style="color:#f06292">decision_engine</span> — probability → SOW_NOW/WAIT</div>
+            <div><span style="color:#f06292">evaluation</span> — Brier Score, BSS, ROC/PR-AUC</div>
+            <div><span style="color:#f06292">model_loader</span> — joblib artifact management</div>
+            <div><span style="color:#f06292">rolling_origin</span> — temporal cross-validation</div>
+            <div><span style="color:#f06292">multiyear_validation</span> — out-of-sample framework</div>
+            <div><span style="color:#f06292">in_season_evaluation</span> — sowing window metrics</div>
+            <div><span style="color:#f06292">label_sensitivity</span> — threshold sensitivity</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATA FLOW ══ -->
+<div id="tab-dataflow" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">🔄 End-to-End Data Pipeline</div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(29,140,248,0.15);font-size:1.2rem">📥</div>
+        <div><div class="card-title">Phase 2 — Historical Rainfall Ingestion</div><div class="card-subtitle">data/raw/rainfall/ → data/processed/historical_events.csv</div></div>
+      </div>
+      <div class="flow-container">
+        <div class="flow-step"><div class="flow-box" style="background:rgba(29,140,248,0.08);border-color:rgba(29,140,248,0.3)"><span class="flow-emoji">📄</span><div class="flow-label">Raw CSV</div><div class="flow-sub">daily rainfall</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(0,201,167,0.08);border-color:rgba(0,201,167,0.3)"><span class="flow-emoji">✅</span><div class="flow-label">Validator</div><div class="flow-sub">dates, bounds, dupes</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(108,99,255,0.08);border-color:rgba(108,99,255,0.3)"><span class="flow-emoji">🔧</span><div class="flow-label">Feature Eng.</div><div class="flow-sub">rolling 1d–30d, spells</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(255,183,77,0.08);border-color:rgba(255,183,77,0.3)"><span class="flow-emoji">🎯</span><div class="flow-label">Event Detector</div><div class="flow-sub">onset, break, heavy rain</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(76,175,125,0.08);border-color:rgba(76,175,125,0.3)"><span class="flow-emoji">📊</span><div class="flow-label">Labeled Dataset</div><div class="flow-sub">historical_events.csv</div></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(108,99,255,0.15);font-size:1.2rem">⚗️</div>
+        <div><div class="card-title">Phase 3A — Predictive Feature & Target Engineering</div><div class="card-subtitle">historical_events.csv → prediction_dataset.csv</div></div>
+      </div>
+      <div class="flow-container">
+        <div class="flow-step"><div class="flow-box" style="background:rgba(108,99,255,0.08);border-color:rgba(108,99,255,0.3)"><span class="flow-emoji">📅</span><div class="flow-label">Cutoff T</div><div class="flow-sub">prediction date</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(29,140,248,0.08);border-color:rgba(29,140,248,0.3)"><span class="flow-emoji">⬅️</span><div class="flow-label">18 Features</div><div class="flow-sub">strictly ≤ T (causal)</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(255,183,77,0.08);border-color:rgba(255,183,77,0.3)"><span class="flow-emoji">➡️</span><div class="flow-label">Binary Targets</div><div class="flow-sub">7d/14d/21d/30d</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(0,201,167,0.08);border-color:rgba(0,201,167,0.3)"><span class="flow-emoji">⏱️</span><div class="flow-label">Temporal Split</div><div class="flow-sub">no random shuffle</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(76,175,125,0.08);border-color:rgba(76,175,125,0.3)"><span class="flow-emoji">📦</span><div class="flow-label">Prediction DS</div><div class="flow-sub">prediction_dataset.csv</div></div></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-bottom:1rem">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(240,98,146,0.15);font-size:1.2rem">🤖</div>
+        <div><div class="card-title">Phases 3B → 4A → 4B — ML Probability to Decision</div><div class="card-subtitle">prediction_dataset → sowing posture</div></div>
+      </div>
+      <div class="flow-container">
+        <div class="flow-step"><div class="flow-box" style="background:rgba(240,98,146,0.08);border-color:rgba(240,98,146,0.3)"><span class="flow-emoji">📉</span><div class="flow-label">Climatology</div><div class="flow-sub">base-rate</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(240,98,146,0.08);border-color:rgba(240,98,146,0.3)"><span class="flow-emoji">📊</span><div class="flow-label">Logistic Reg.</div><div class="flow-sub">18-feature pipeline</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(108,99,255,0.08);border-color:rgba(108,99,255,0.3)"><span class="flow-emoji">🎚️</span><div class="flow-label">Calibration</div><div class="flow-sub">Platt scaling</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(255,183,77,0.08);border-color:rgba(255,183,77,0.3)"><span class="flow-emoji">⚡</span><div class="flow-label">Decision Engine</div><div class="flow-sub">threshold mapping</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(76,175,125,0.08);border-color:rgba(76,175,125,0.3)"><span class="flow-emoji">🌾</span><div class="flow-label">Sowing Posture</div><div class="flow-sub">SOW_NOW / WAIT</div></div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon" style="background:rgba(0,201,167,0.15);font-size:1.2rem">📋</div>
+        <div><div class="card-title">Phase 5 → Farmer Delivery</div><div class="card-subtitle">Sowing posture → validated advisory → farmer communication</div></div>
+      </div>
+      <div class="flow-container">
+        <div class="flow-step"><div class="flow-box" style="background:rgba(0,201,167,0.08);border-color:rgba(0,201,167,0.3)"><span class="flow-emoji">🎯</span><div class="flow-label">Decision + Crop</div><div class="flow-sub">posture + language</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(29,140,248,0.08);border-color:rgba(29,140,248,0.3)"><span class="flow-emoji">📚</span><div class="flow-label">Rule Registry</div><div class="flow-sub">VALIDATED only</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(76,175,125,0.08);border-color:rgba(76,175,125,0.3)"><span class="flow-emoji">✅</span><div class="flow-label">Advisory Text</div><div class="flow-sub">or null (safe)</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(255,183,77,0.08);border-color:rgba(255,183,77,0.3)"><span class="flow-emoji">🚨</span><div class="flow-label">Alert Service</div><div class="flow-sub">severity routing</div></div></div>
+        <div class="flow-arrow">→</div>
+        <div class="flow-step"><div class="flow-box" style="background:rgba(179,157,219,0.08);border-color:rgba(179,157,219,0.3)"><span class="flow-emoji">📱</span><div class="flow-label">Farmer</div><div class="flow-sub">SMS/WhatsApp/Voice</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DATABASE ══ -->
+<div id="tab-database" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">🗄️ Database Schema — 9 ORM Entities</div>
+    <div class="alert-box info">
+      <div class="alert-icon">ℹ️</div>
+      <div><strong>Dev:</strong> SQLite (meghvani.db) · <strong>Prod:</strong> PostgreSQL + PostGIS · <strong>Migrations:</strong> Alembic + runtime idempotent run_migrations() · <strong>Seeder:</strong> DEMO data on startup</div>
+    </div>
+    <div class="grid-3">
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(29,140,248,0.1)">📍 <span style="color:#64b5f6">Block</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Primary spatial unit</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">block_id</span><span class="db-field-type">VARCHAR(20)</span></div>
+          <div class="db-field"><span class="db-field-name">block_name</span><span class="db-field-type">VARCHAR(100)</span></div>
+          <div class="db-field"><span class="db-field-name">district</span><span class="db-field-type">VARCHAR(100)</span></div>
+          <div class="db-field"><span class="db-field-name">state</span><span class="db-field-type">VARCHAR(50)</span></div>
+          <div class="db-field"><span class="db-field-name">latitude</span><span class="db-field-type">FLOAT</span></div>
+          <div class="db-field"><span class="db-field-name">longitude</span><span class="db-field-type">FLOAT</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(0,201,167,0.1)">🏘️ <span style="color:#4db6ac">Village</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Farmer localization</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">village_name</span><span class="db-field-type">VARCHAR(100)</span></div>
+          <div class="db-field"><span class="db-field-name">pin_code</span><span class="db-field-type">VARCHAR(10)</span></div>
+          <div class="db-field"><span class="db-field-name fk">block_id (FK)</span><span class="db-field-type">→ Block</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(76,175,125,0.1)">🌱 <span style="color:#81c784">Crop</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Kharif catalog</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">crop_id</span><span class="db-field-type">VARCHAR(50)</span></div>
+          <div class="db-field"><span class="db-field-name">crop_name</span><span class="db-field-type">VARCHAR(100)</span></div>
+          <div class="db-field"><span class="db-field-name">kharif_season</span><span class="db-field-type">BOOLEAN</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(255,183,77,0.1)">👤 <span style="color:#ffcc80">Farmer</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Privacy-preserving</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">phone_masked</span><span class="db-field-type">VARCHAR(15)</span></div>
+          <div class="db-field"><span class="db-field-name">language</span><span class="db-field-type">VARCHAR(10)</span></div>
+          <div class="db-field"><span class="db-field-name fk">village_id (FK)</span><span class="db-field-type">→ Village</span></div>
+          <div class="db-field"><span class="db-field-name fk">crop_id (FK)</span><span class="db-field-type">→ Crop</span></div>
+          <div class="db-field"><span class="db-field-name">consent_given</span><span class="db-field-type">BOOLEAN</span></div>
+          <div class="db-field"><span class="db-field-name">is_active</span><span class="db-field-type">BOOLEAN</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(29,140,248,0.1)">🌧️ <span style="color:#64b5f6">WeatherData</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Daily rainfall</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name fk">block_id (FK)</span><span class="db-field-type">→ Block</span></div>
+          <div class="db-field"><span class="db-field-name">date</span><span class="db-field-type">DATE</span></div>
+          <div class="db-field"><span class="db-field-name">rainfall_mm</span><span class="db-field-type">FLOAT</span></div>
+          <div class="db-field"><span class="db-field-name">source</span><span class="db-field-type">VARCHAR(50)</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(108,99,255,0.1)">📝 <span style="color:#9e9eff">RegistrationSession</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">SMS state</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">phone_number</span><span class="db-field-type">VARCHAR(15)</span></div>
+          <div class="db-field"><span class="db-field-name">state</span><span class="db-field-type">VARCHAR(30)</span></div>
+          <div class="db-field"><span class="db-field-name">language</span><span class="db-field-type">VARCHAR(10)</span></div>
+          <div class="db-field"><span class="db-field-name">pin_code</span><span class="db-field-type">VARCHAR(10)</span></div>
+          <div class="db-field"><span class="db-field-name">village_id</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name">crop_id</span><span class="db-field-type">VARCHAR(50)</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(0,201,167,0.1)">👁️ <span style="color:#4db6ac">FarmerObservation</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Crowd truth</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name fk">farmer_id (FK)</span><span class="db-field-type">→ Farmer</span></div>
+          <div class="db-field"><span class="db-field-name">observation_type</span><span class="db-field-type">VARCHAR(30)</span></div>
+          <div class="db-field"><span class="db-field-name">date</span><span class="db-field-type">DATE</span></div>
+          <div class="db-field"><span class="db-field-name">validation_status</span><span class="db-field-type">VARCHAR(50)</span></div>
+          <div class="db-field"><span class="db-field-name">notes</span><span class="db-field-type">TEXT</span></div>
+        </div>
+      </div>
+      <div class="db-entity">
+        <div class="db-entity-header" style="background:rgba(240,98,146,0.1)">🚨 <span style="color:#f48fb1">AlertLog</span><span style="font-size:0.62rem;color:var(--text-muted);margin-left:auto">Dispatched alerts</span></div>
+        <div class="db-entity-body">
+          <div class="db-field"><span class="db-field-name pk">id (PK)</span><span class="db-field-type">INTEGER</span></div>
+          <div class="db-field"><span class="db-field-name fk">farmer_id (FK)</span><span class="db-field-type">→ Farmer</span></div>
+          <div class="db-field"><span class="db-field-name">severity</span><span class="db-field-type">VARCHAR(50)</span></div>
+          <div class="db-field"><span class="db-field-name">channel</span><span class="db-field-type">VARCHAR(20)</span></div>
+          <div class="db-field"><span class="db-field-name">status</span><span class="db-field-type">VARCHAR(30)</span></div>
+          <div class="db-field"><span class="db-field-name">fallback_used</span><span class="db-field-type">BOOLEAN</span></div>
+          <div class="db-field"><span class="db-field-name">rule_id</span><span class="db-field-type">VARCHAR(100)</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ API ENDPOINTS ══ -->
+<div id="tab-api" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">🔌 API Endpoint Catalogue</div>
+    <div class="card" style="overflow:auto">
+      <table class="api-table">
+        <thead><tr><th>Method</th><th>Endpoint</th><th>Description</th><th>Phase</th></tr></thead>
+        <tbody>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/health</td><td>System health check</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/blocks</td><td>List all spatial blocks</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/villages</td><td>List villages (filter by PIN code)</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/crops</td><td>Kharif crop catalog</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/farmers</td><td>List farmers (officer view, masked phones)</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-post">POST</span></td><td class="endpoint-path">/api/registration</td><td>Advance SMS conversational state machine</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-post">POST</span></td><td class="endpoint-path">/api/observations</td><td>Submit farmer crowd observation (RAIN/DRY/HEAVY)</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-post">POST</span></td><td class="endpoint-path">/api/alerts</td><td>Dispatch severity alert via routing engine</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/weather</td><td>Block weather observations</td><td style="color:var(--text-muted);font-size:0.7rem">1</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/historical/summary</td><td>Dataset overview: records, events, episodes</td><td style="color:var(--text-muted);font-size:0.7rem">2</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/historical/events</td><td>Filter events by block/type/date range</td><td style="color:var(--text-muted);font-size:0.7rem">2</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/historical/{block_id}</td><td>Chronological rainfall series + event flags</td><td style="color:var(--text-muted);font-size:0.7rem">2</td></tr>
+          <tr><td><span class="method-badge method-post">POST</span></td><td class="endpoint-path">/api/historical/process</td><td>Trigger local demo dataset ingestion pipeline</td><td style="color:var(--text-muted);font-size:0.7rem">2</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/prediction-dataset/summary</td><td>Feature/target metrics & class balance</td><td style="color:var(--text-muted);font-size:0.7rem">3A</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/prediction-dataset/{block_id}</td><td>Block-level prediction rows with filters</td><td style="color:var(--text-muted);font-size:0.7rem">3A</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/forecast/{block_id}/false-onset</td><td>Raw + calibrated probability output</td><td style="color:var(--text-muted);font-size:0.7rem">3B</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/forecast/{block_id}/false-onset/decision</td><td>Sowing posture + reason codes</td><td style="color:var(--text-muted);font-size:0.7rem">4B</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/forecast/baseline-summary</td><td>Full model evaluation, calibration, features</td><td style="color:var(--text-muted);font-size:0.7rem">3B</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/advisory/{block_id}</td><td>Crop advisory lookup (?crop_id=&language=)</td><td style="color:var(--text-muted);font-size:0.7rem">5A</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/advisory/rules</td><td>Query rule registry with filters</td><td style="color:var(--text-muted);font-size:0.7rem">5B</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/validation/*</td><td>Multi-year validation framework results</td><td style="color:var(--text-muted);font-size:0.7rem">7</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/calibration/*</td><td>Probability calibration status & curves</td><td style="color:var(--text-muted);font-size:0.7rem">4A</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/rolling-origin/*</td><td>Rolling-origin cross-validation results</td><td style="color:var(--text-muted);font-size:0.7rem">8A</td></tr>
+          <tr><td><span class="method-badge method-get">GET</span></td><td class="endpoint-path">/api/demo/*</td><td>End-to-end SIH demo scenarios</td><td style="color:var(--text-muted);font-size:0.7rem">7A</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ML PIPELINE ══ -->
+<div id="tab-ml" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">🌧️ Event Detection Thresholds</div>
+    <div class="threshold-grid">
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">🌱</div><div class="threshold-name" style="color:#4caf7d">Monsoon Onset</div></div>
+        <div class="threshold-rule">Cumulative rainfall ≥ 20mm over 3 consecutive days. 30-day lockout debounce prevents repeated triggers.</div>
+        <div><span class="threshold-value">≥ 20mm / 3 days</span></div>
+        <div style="margin-top:6px"><span class="threshold-value">30-day lockout</span></div>
+      </div>
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">⚠️</div><div class="threshold-name" style="color:#ffb74d">False Onset</div></div>
+        <div class="threshold-rule">Onset trigger followed by ≥ 7 dry days (&lt;2.5mm/day) within 30-day lookahead window.</div>
+        <div><span class="threshold-value">≥ 7 dry days lookahead</span></div>
+        <div style="margin-top:6px"><span class="threshold-value">&lt; 2.5mm/day dry ceiling</span></div>
+      </div>
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">🏜️</div><div class="threshold-name" style="color:#90a4ae">Break Spell</div></div>
+        <div class="threshold-rule">≥ 5 consecutive dry days (&lt;2.5mm/day) during active monsoon. Each break assigned a unique episode ID.</div>
+        <div><span class="threshold-value">≥ 5 consecutive days</span></div>
+        <div style="margin-top:6px"><span class="threshold-value">&lt; 2.5mm/day</span></div>
+      </div>
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">⛈️</div><div class="threshold-name" style="color:#f06292">Heavy Rain</div></div>
+        <div class="threshold-rule">IMD standard: Heavy ≥ 64.5mm/day. Very Heavy ≥ 115.5mm/day. Single-day window.</div>
+        <div><span class="threshold-value">≥ 64.5mm/day (heavy)</span></div>
+        <div style="margin-top:6px"><span class="threshold-value">≥ 115.5mm/day (v.heavy)</span></div>
+      </div>
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">💧</div><div class="threshold-name" style="color:#64b5f6">Revival</div></div>
+        <div class="threshold-rule">≥ 15mm cumulative over 2 days after a break spell episode ends.</div>
+        <div><span class="threshold-value">≥ 15mm over 2 days</span></div>
+      </div>
+      <div class="threshold-card">
+        <div class="threshold-header"><div class="threshold-emoji">📅</div><div class="threshold-name" style="color:#b39ddb">Horizons</div></div>
+        <div class="threshold-rule">Binary classification targets for future event within N calendar days, strictly after prediction date T.</div>
+        <div><span class="threshold-value">7d · 14d · 21d · 30d</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚡ Decision Engine — Sowing Posture</div>
+    <div class="decision-band">
+      <div class="decision-zone sow">
+        <div class="decision-emoji">🌾</div>
+        <div class="decision-label">SOW_NOW</div>
+        <div class="decision-range">P &lt; 0.30</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:5px">LOW false onset risk</div>
+      </div>
+      <div class="decision-zone partial">
+        <div class="decision-emoji">⚖️</div>
+        <div class="decision-label">SOW_PART_NOW</div>
+        <div class="decision-range">0.30 ≤ P &lt; 0.60</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:5px">MEDIUM false onset risk</div>
+      </div>
+      <div class="decision-zone wait">
+        <div class="decision-emoji">⏳</div>
+        <div class="decision-label">WAIT</div>
+        <div class="decision-range">P ≥ 0.60</div>
+        <div style="font-size:0.7rem;color:var(--text-muted);margin-top:5px">HIGH false onset risk</div>
+      </div>
+    </div>
+    <div class="alert-box warning">
+      <div class="alert-icon">⚠️</div>
+      <div><strong>Prototype Only:</strong> Thresholds loaded from config/event_thresholds.yaml. Uses uncalibrated prototype probability. is_operational = false enforced everywhere.</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📐 18 Predictive Features (Strictly Backward-Looking, ≤ T)</div>
+    <div class="grid-3">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.8rem;font-size:0.85rem">☔ Rainfall Summaries</div>
+        <div class="card-body" style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;line-height:2.1">
+          rainfall_mm &nbsp;(1d)<br>rainfall_3d<br>rainfall_5d<br>rainfall_7d<br>rainfall_14d<br>rainfall_30d
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.8rem;font-size:0.85rem">📊 Trend & Spell Metrics</div>
+        <div class="card-body" style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;line-height:2.1">
+          dry_spell_days<br>wet_spell_days<br>rainfall_change_3d<br>rainfall_change_7d<br>rainfall_ratio_3d_7d
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.8rem;font-size:0.85rem">📅 Calendar & Recency</div>
+        <div class="card-body" style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;line-height:2.1">
+          month<br>day_of_year<br>monsoon_month_flag<br>days_since_last_onset<br>days_since_last_break<br>days_since_last_heavy_rain<br>days_since_last_revival
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🧪 Model Artifact Registry</div>
+    <div class="card" style="overflow:auto">
+      <table class="api-table">
+        <thead><tr><th>Artifact</th><th>Purpose</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="endpoint-path" style="font-size:0.72rem">false_onset_7d_logistic.joblib</td><td>Chronological holdout baseline</td><td><span style="color:#ffcc80;font-size:0.72rem">INSUFFICIENT_EVENT_VARIATION</span></td></tr>
+          <tr><td class="endpoint-path" style="font-size:0.72rem">false_onset_7d_logistic_diagnostic.joblib</td><td>Diagnostic full-year evaluation</td><td><span style="color:#81c784;font-size:0.72rem">ROC-AUC: 0.9931</span></td></tr>
+          <tr><td class="endpoint-path" style="font-size:0.72rem">false_onset_7d_calibrated.joblib</td><td>Platt-scaled calibration model</td><td><span style="color:#f48fb1;font-size:0.72rem">INSUFFICIENT_CALIBRATION_DATA</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADVISORY ENGINE ══ -->
+<div id="tab-advisory" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">📋 Advisory Rule Validation Hierarchy</div>
+    <div class="rule-hierarchy">
+      <div class="rule-tier validated">
+        <div class="rule-tier-icon">✅</div>
+        <div class="rule-tier-info">
+          <div class="rule-tier-name">VALIDATED</div>
+          <div class="rule-tier-desc">Approved by institutional authority (ICAR-CRIDA, ICAR-CICR, Dr. PDKV, Govt. Maharashtra). Only these can produce farmer-facing advisory text. Must specify: institution, publication, version, date, rule_id.</div>
+        </div>
+        <div class="rule-count">6</div>
+      </div>
+      <div class="rule-tier review">
+        <div class="rule-tier-icon">⏳</div>
+        <div class="rule-tier-info">
+          <div class="rule-tier-name">REVIEW_REQUIRED</div>
+          <div class="rule-tier-desc">Under review by agronomists / KVK. Blocked from operational farmer dispatch until localized sign-off. Intercropping posture rules are in this state.</div>
+        </div>
+        <div class="rule-count">2</div>
+      </div>
+      <div class="rule-tier unvalidated">
+        <div class="rule-tier-icon">❌</div>
+        <div class="rule-tier-info">
+          <div class="rule-tier-name">UNVALIDATED</div>
+          <div class="rule-tier-desc">Demonstration rules awaiting formal review. Never matched in advisory lookups. Vague attributions ("AI knowledge", "Internet") strictly rejected by validate_rule_source().</div>
+        </div>
+        <div class="rule-count">3</div>
+      </div>
+      <div class="rule-tier unavailable">
+        <div class="rule-tier-icon">🚫</div>
+        <div class="rule-tier-info">
+          <div class="rule-tier-name">UNAVAILABLE / NO_VALIDATED_RULE</div>
+          <div class="rule-tier-desc">No rule for the crop + decision + language combo. advisory_text = null. action_type = null. System never fabricates advice — strict null safety enforced.</div>
+        </div>
+        <div class="rule-count">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🏛️ Validated Institutional Sources — Maharashtra Vidarbha Zone</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(76,175,125,0.15)">🏛️</div><div><div class="card-title">ICAR-CRIDA</div><div class="card-subtitle">Central Research Institute for Dryland Agriculture</div></div></div>
+        <div class="card-body"><em>District Agriculture Contingency Plan, Nagpur, Maharashtra</em><br><span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-cyan)">CRIDA-DACP-MH-NAGPUR-2020</span><br><br>Rules: SOYBEAN_SOW_NOW</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(76,175,125,0.15)">🏛️</div><div><div class="card-title">ICAR-CICR</div><div class="card-subtitle">Central Institute for Cotton Research, Nagpur</div></div></div>
+        <div class="card-body"><em>Cotton Crop Advisory & Contingency Strategies for Rainfed Vidarbha</em><br><span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-cyan)">ICAR-CICR-TECH-VID-2022</span><br><br>Rules: COTTON_SOW_NOW, COTTON_WAIT</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(76,175,125,0.15)">🏛️</div><div><div class="card-title">Dr. PDKV Akola</div><div class="card-subtitle">Dr. Panjabrao Deshmukh Krishi Vidyapeeth</div></div></div>
+        <div class="card-body"><em>Pigeonpea (Tur) Production Technology & Agro-Advisory for Vidarbha</em><br><span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-cyan)">DR-PDKV-AGROMET-TUR-2023</span><br><br>Rules: PIGEONPEA_SOW_NOW, PIGEONPEA_WAIT</div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(76,175,125,0.15)">🏛️</div><div><div class="card-title">Govt. Maharashtra — Dept. Agriculture</div><div class="card-subtitle">Advisory Guidelines for Kharif Sowing</div></div></div>
+        <div class="card-body"><em>Advisory Guidelines for Kharif Sowing in Vidarbha and Marathwada</em><br><span style="font-family:'JetBrains Mono',monospace;font-size:0.7rem;color:var(--accent-cyan)">MAHA-AGRI-KHARIF-ADV-2023</span><br><br>Rules: SOYBEAN_WAIT</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ COMMUNICATION ══ -->
+<div id="tab-communication" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">📡 Communication Architecture</div>
+    <div class="grid-2">
+      <div>
+        <div class="section-title" style="font-size:0.92rem">📱 SMS Registration State Machine</div>
+        <div class="sms-flow">
+          <div class="sms-node"><div class="sms-dot">1</div><div class="sms-content"><div class="sms-state">INITIAL</div><div class="sms-msg">Farmer texts "MEGH" or gives a missed call</div><div class="sms-reply">→ System identifies phone number (no data cost)</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot">2</div><div class="sms-content"><div class="sms-state">LANGUAGE_SELECTION</div><div class="sms-msg">"Reply 1: Hindi, 2: Marathi, 3: Kannada, 4: English"</div><div class="sms-reply">→ Farmer replies "1"</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot">3</div><div class="sms-content"><div class="sms-state">PIN_ENTRY</div><div class="sms-msg">"Enter your 6-digit PIN code"</div><div class="sms-reply">→ Farmer replies "441001"</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot">4</div><div class="sms-content"><div class="sms-state">VILLAGE_SELECTION</div><div class="sms-msg">"1. Nagpur Rural  2. Kamptee  3. Hingna"</div><div class="sms-reply">→ Farmer replies "2" (Village → Block auto-mapped)</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot">5</div><div class="sms-content"><div class="sms-state">CROP_SELECTION</div><div class="sms-msg">"1. Soybean  2. Cotton  3. Pigeonpea  4. Maize"</div><div class="sms-reply">→ Farmer replies "1"</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot">6</div><div class="sms-content"><div class="sms-state">CONSENT</div><div class="sms-msg">"Reply YES to activate your Meghvani alerts"</div><div class="sms-reply">→ Farmer replies "YES" (mandatory)</div></div></div>
+          <div class="sms-line"></div>
+          <div class="sms-node"><div class="sms-dot" style="background:var(--accent-teal)">✓</div><div class="sms-content" style="background:rgba(76,175,125,0.08);border-color:rgba(76,175,125,0.35)"><div class="sms-state" style="color:var(--accent-green)">ACTIVE</div><div class="sms-msg">Profile created. Confirmation in Hindi.</div><div class="sms-reply" style="color:var(--accent-green)">✓ No Aadhaar · Phone masked · Consent logged</div></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="section-title" style="font-size:0.92rem">🚨 Alert Severity Routing</div>
+        <div class="severity-card normal">
+          <div class="severity-name">NORMAL Risk</div>
+          <div class="severity-channels">📱 SMS only<br>Single dispatch attempt</div>
+        </div>
+        <div class="severity-card important">
+          <div class="severity-name">IMPORTANT Risk</div>
+          <div class="severity-channels">📱 SMS<br>💬 WhatsApp<br>Both channels dispatched simultaneously</div>
+        </div>
+        <div class="severity-card high">
+          <div class="severity-name">HIGH RISK</div>
+          <div class="severity-channels">
+            📞 Automated Voice Call (Attempt 1)<br>
+            &nbsp;&nbsp;↓ NO_ANSWER → wait delay<br>
+            📞 Voice Retry (Attempt 2)<br>
+            &nbsp;&nbsp;↓ NO_ANSWER → <strong>SMS Fallback</strong><br>
+            📱 [Fallback SMS — Voice Unanswered]
+          </div>
+        </div>
+        <div class="alert-box info" style="margin-top:1rem">
+          <div class="alert-icon">ℹ️</div>
+          <div>Retry delays and channel routing configured in <span style="font-family:'JetBrains Mono',monospace;color:var(--accent-cyan)">config/communication.yaml</span>. All providers mocked in Phase 1.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ PHASES ══ -->
+<div id="tab-phases" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">📅 Development Phases Roadmap</div>
+    <div class="timeline">
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 1</div><div class="timeline-title">Production-Ready Foundation</div><div class="timeline-desc">FastAPI, SQLAlchemy ORM (9 entities), SMS state machine, mock providers, alert severity routing with voice fallback. 25/25 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 2 & 2.1</div><div class="timeline-title">Historical Rainfall Pipeline & Event Detection</div><div class="timeline-desc">CSV ingestion → validation → rolling features (1d–30d) → onset debounce (30-day lockout) → break episode IDs → heavy rain → revival. 29/29 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 3A</div><div class="timeline-title">Predictive Feature & Target Engineering</div><div class="timeline-desc">18 causal predictors, 5-event binary targets across 4 horizons, chronological temporal split, dedicated data leakage audit. 19/19 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 3B & 3B.1</div><div class="timeline-title">First Probabilistic Baseline + Evaluation Integrity</div><div class="timeline-desc">Logistic Regression baseline, climatology baseline, Brier Score, BSS. Separated chronological holdout (INSUFFICIENT_EVENT_VARIATION) vs diagnostic evaluation (ROC-AUC: 0.9931). 24/24 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 4A</div><div class="timeline-title">Probability Calibration</div><div class="timeline-desc">Platt scaling (sigmoid) on 3-way temporal split. Dual output: raw_probability + calibrated_probability (null = INSUFFICIENT_CALIBRATION_DATA). 15/15 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 4B</div><div class="timeline-title">Prototype Decision Layer</div><div class="timeline-desc">SOW_NOW / SOW_PART_NOW / WAIT / UNAVAILABLE, configurable thresholds from YAML, deterministic reason codes, economic loss-ratio analysis. 20/20 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 5A</div><div class="timeline-title">Advisory Rule Framework</div><div class="timeline-desc">In-memory rule registry, VALIDATED-only matching, null safety, source traceability, fully decoupled from ML/DB/comms. 20/20 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phase 5B</div><div class="timeline-title">Sourced Agronomic Rule Registration</div><div class="timeline-desc">6 VALIDATED rules from ICAR-CRIDA, ICAR-CICR, Dr. PDKV, MahaAgri for Soybean/Cotton/Pigeonpea in Vidarbha. Rule inspection API. 14/14 tests.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot active"></div><div class="timeline-content"><span class="status-badge active">🔄 Next</span><div class="timeline-phase" style="color:var(--accent-amber)">Phase 5C</div><div class="timeline-title">Hyperlocal Rule Contextualization & Pilot Communications</div><div class="timeline-desc">KVK sign-off on intercropping rules, soil-depth qualifiers (shallow vs. medium-deep vertisols), controlled pilot SMS dispatch with farmer opt-in consent.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot done"></div><div class="timeline-content"><span class="status-badge done">✓ Complete</span><div class="timeline-phase" style="color:#4caf7d">Phases 6–8B</div><div class="timeline-title">Communication Sim · Observations · Validation · Calibration · In-Season · Label Sensitivity</div><div class="timeline-desc">Communication simulation, farmer observation feedback, SIH demo, scientific validation, multi-year framework, rolling-origin CV, calibration methodology, in-season evaluation, label sensitivity analysis.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-content"><span class="status-badge pending">🔲 Future</span><div class="timeline-phase" style="color:var(--text-muted)">Phase 9</div><div class="timeline-title">Advanced ML Models</div><div class="timeline-desc">Random Forest, LightGBM, XGBoost, QRF (quantile regression forest), LSTM neural networks. Ensemble methods. Multi-year training data.</div></div></div>
+      <div class="timeline-item"><div class="timeline-dot pending"></div><div class="timeline-content"><span class="status-badge pending">🔲 Future</span><div class="timeline-phase" style="color:var(--text-muted)">Phase 10</div><div class="timeline-title">Real IMD Data & Operational Deployment</div><div class="timeline-desc">Real IMD satellite/station data, Twilio/Gupshup/Exotel integration, PostgreSQL+PostGIS production deployment, multi-year operational validation, Aadhaar-free KYC compliance.</div></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TECH STACK ══ -->
+<div id="tab-stack" class="tab-panel fade-in">
+  <div class="section">
+    <div class="section-title">⚙️ Full Technology Stack</div>
+    <div class="card" style="overflow:auto">
+      <table class="stack-table">
+        <tr><td class="stack-layer-name">Backend API</td><td><div class="stack-tech"><span class="pill pill-blue">Python 3.11+</span><span class="pill pill-blue">FastAPI</span><span class="pill pill-blue">Pydantic v2</span><span class="pill pill-blue">Uvicorn</span></div></td></tr>
+        <tr><td class="stack-layer-name">ORM / Database</td><td><div class="stack-tech"><span class="pill pill-teal">SQLAlchemy 2.0</span><span class="pill pill-teal">Alembic</span><span class="pill pill-teal">SQLite (dev)</span><span class="pill pill-teal">PostgreSQL+PostGIS (prod)</span></div></td></tr>
+        <tr><td class="stack-layer-name">Data Science</td><td><div class="stack-tech"><span class="pill pill-rose">pandas</span><span class="pill pill-rose">numpy</span><span class="pill pill-rose">scipy</span><span class="pill pill-rose">scikit-learn</span><span class="pill pill-rose">joblib</span></div></td></tr>
+        <tr><td class="stack-layer-name">Configuration</td><td><div class="stack-tech"><span class="pill pill-amber">PyYAML</span><span class="pill pill-amber">Pydantic Settings</span><span class="pill pill-amber">10 YAML config files</span></div></td></tr>
+        <tr><td class="stack-layer-name">Frontend</td><td><div class="stack-tech"><span class="pill pill-purple">React 18</span><span class="pill pill-purple">Vite</span><span class="pill pill-purple">TypeScript</span><span class="pill pill-purple">Tailwind CSS</span><span class="pill pill-purple">Lucide Icons</span></div></td></tr>
+        <tr><td class="stack-layer-name">Testing</td><td><div class="stack-tech"><span class="pill pill-green">pytest</span><span class="pill pill-green">FastAPI TestClient</span><span class="pill pill-green">HTTPX</span><span class="pill pill-green">in-memory SQLite</span></div></td></tr>
+        <tr><td class="stack-layer-name">Containerization</td><td><div class="stack-tech"><span class="pill pill-gray">Docker</span><span class="pill pill-gray">Docker Compose</span><span class="pill pill-gray">Multi-stage Dockerfiles</span></div></td></tr>
+        <tr><td class="stack-layer-name">Dev Tools</td><td><div class="stack-tech"><span class="pill pill-gray">Swagger UI (/docs)</span><span class="pill pill-gray">Alembic CLI</span><span class="pill pill-gray">Jupyter Notebooks</span><span class="pill pill-gray">CLI verify scripts</span></div></td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">🐳 Running the System</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(29,140,248,0.15)">🚀</div><div><div class="card-title">Local Development</div><div class="card-subtitle">Run individual services</div></div></div>
+        <div class="card-body" style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;line-height:2">
+          <span style="color:var(--text-muted"># Backend</span><br>
+          uvicorn app.main:app --app-dir backend --reload --port 8000<br><br>
+          <span style="color:var(--text-muted)"># Frontend</span><br>
+          cd frontend &amp;&amp; npm run dev<br><br>
+          <span style="color:var(--text-muted)"># Swagger UI</span><br>
+          http://localhost:8000/docs<br>
+          <span style="color:var(--text-muted)"># Frontend</span><br>
+          http://localhost:5173
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-icon" style="background:rgba(76,175,125,0.15)">🐳</div><div><div class="card-title">Docker Compose</div><div class="card-subtitle">Full stack — one command</div></div></div>
+        <div class="card-body" style="font-family:'JetBrains Mono',monospace;font-size:0.73rem;line-height:2">
+          <span style="color:var(--text-muted)"># Start all services</span><br>
+          docker-compose up --build<br><br>
+          backend  → :8000 (FastAPI)<br>
+          frontend → :80 (React/Nginx)<br>
+          db       → SQLite / PostgreSQL<br><br>
+          <span style="color:var(--text-muted)"># Run test suite</span><br>
+          pytest tests -v  <span style="color:var(--accent-green)">(166 tests)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">⚠️ Scientific Boundaries</div>
+    <div class="alert-box warning">
+      <div class="alert-icon">⚠️</div>
+      <div><strong>Single-Year Dataset Constraint:</strong> All ML metrics are prototype demonstrations on one calendar year. Multi-year out-of-sample validation is required before operational use. is_operational: false enforced in all API responses.</div>
+    </div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.8rem;color:var(--accent-rose)">❌ Not Yet Implemented</div>
+        <div class="card-body" style="line-height:2">
+          ❌ Real SMS / WhatsApp / Voice dispatch<br>
+          ❌ Real IMD / satellite rainfall data<br>
+          ❌ Advanced models (RF, LightGBM, LSTM)<br>
+          ❌ Multi-year validation dataset<br>
+          ❌ REVIEW_REQUIRED rules dispatch<br>
+          ❌ Aadhaar or PII collection
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:0.8rem;color:var(--accent-green)">✅ Privacy & Integrity Guarantees</div>
+        <div class="card-body" style="line-height:2">
+          ✅ No Aadhaar collected<br>
+          ✅ Phone numbers masked (+91****3210)<br>
+          ✅ Explicit YES consent enforced<br>
+          ✅ Observations never auto-retrain ML<br>
+          ✅ Zero future data leakage in features<br>
+          ✅ Scientific warnings in every API response
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  <div>🌧️ <strong>Meghvani</strong> — Hyperlocal Monsoon Onset &amp; Break Prediction System</div>
+  <div style="margin-top:8px">Smart India Hackathon 2026 Prototype · Block &amp; Village Scale Agrometeorological Intelligence</div>
+  <div style="margin-top:6px">166/166 tests · 17 API routers · 9 ORM entities · 18 ML features · 6 VALIDATED agronomic rules</div>
+</footer>
+
+</div>
+<script>
+function showTab(id, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+  const panel = document.getElementById('tab-' + id);
+  if (panel) {
+    panel.classList.add('active');
+    panel.classList.remove('fade-in');
+    void panel.offsetWidth;
+    panel.classList.add('fade-in');
+  }
+  if (el) el.classList.add('active');
+}
+
+// Animate stat numbers
+document.querySelectorAll('.stat-num[data-target]').forEach(el => {
+  const target = parseInt(el.dataset.target);
+  let current = 0;
+  const step = Math.ceil(target / 25);
+  const timer = setInterval(() => {
+    current = Math.min(current + step, target);
+    el.textContent = current;
+    if (current >= target) clearInterval(timer);
+  }, 50);
+});
+</script>
+</body>
+</html>

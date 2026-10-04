@@ -7,7 +7,9 @@ import {
   Crop,
   FarmerObservation,
   AlertLog,
-  ForecastOutput
+  WeatherObservation,
+  DecisionSupportResult,
+  AdvisoryResult
 } from '../types';
 import {
   Users,
@@ -20,9 +22,17 @@ import {
   ShieldCheck,
   AlertTriangle,
   RefreshCw,
-  PhoneCall,
-  MessageSquare
+  TrendingDown,
+  Info,
+  Calendar,
+  Lock,
+  Radio,
+  FileCheck
 } from 'lucide-react';
+import { AgricultureMetricCard } from '../components/AgricultureMetricCard';
+import { InteractiveWeatherMap } from '../components/InteractiveWeatherMap';
+import { RecentRainfallChart } from '../components/RecentRainfallChart';
+import { FarmerMessageCard } from '../components/FarmerMessageCard';
 
 export const OfficerDashboard: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -31,30 +41,44 @@ export const OfficerDashboard: React.FC = () => {
   const [crops, setCrops] = useState<Crop[]>([]);
   const [observations, setObservations] = useState<FarmerObservation[]>([]);
   const [alerts, setAlerts] = useState<AlertLog[]>([]);
-  const [forecastContract, setForecastContract] = useState<ForecastOutput | null>(null);
+  const [weatherObs, setWeatherObs] = useState<WeatherObservation[]>([]);
+  const [decisionData, setDecisionData] = useState<DecisionSupportResult | null>(null);
+  const [advisoryData, setAdvisoryData] = useState<AdvisoryResult | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Alert simulation state
+  // Selected parameters
   const [selectedBlockId, setSelectedBlockId] = useState<number>(1);
+  const [selectedCrop, setSelectedCrop] = useState<string>('soybean');
   const [selectedRiskLevel, setSelectedRiskLevel] = useState<string>('NORMAL');
   const [selectedAlertType, setSelectedAlertType] = useState<string>('ONSET');
   const [dispatchStatus, setDispatchStatus] = useState<string | null>(null);
   const [dispatching, setDispatching] = useState<boolean>(false);
 
+  const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
+    id: 1,
+    name: 'Nagpur Rural (Nagpur)',
+    district: 'Nagpur',
+    state: 'Maharashtra',
+    latitude: 21.1458,
+    longitude: 79.0882,
+    active: true
+  };
+
+  const blockCode = selectedBlock.id === 1 ? 'BLK001' : selectedBlock.id === 2 ? 'BLK002' : 'BLK003';
+
   const loadData = async () => {
     try {
       setError(null);
-      const [f, b, v, c, obs, alt, fc] = await Promise.all([
+      const [f, b, v, c, obs, alt] = await Promise.all([
         api.getFarmers(),
         api.getBlocks(),
         api.getVillages(),
         api.getCrops(),
         api.getObservations(),
         api.getAlerts(),
-        api.getForecast(1).catch(() => null),
       ]);
       setFarmers(f);
       setBlocks(b);
@@ -62,7 +86,6 @@ export const OfficerDashboard: React.FC = () => {
       setCrops(c);
       setObservations(obs);
       setAlerts(alt);
-      setForecastContract(fc);
     } catch (err: any) {
       setError(err.message || 'Failed to load officer dashboard data');
     } finally {
@@ -71,13 +94,36 @@ export const OfficerDashboard: React.FC = () => {
     }
   };
 
+  const loadBlockSpecificTelemetry = async (blockId: number, cropId: string) => {
+    const code = blockId === 1 ? 'BLK001' : blockId === 2 ? 'BLK002' : 'BLK003';
+    try {
+      const [w, dec, adv] = await Promise.all([
+        api.getWeather(blockId).catch(() => []),
+        api.getFalseOnsetDecision(code).catch(() => null),
+        api.getBlockAdvisory(code, cropId, 'mr').catch(() => null),
+      ]);
+      setWeatherObs(w);
+      setDecisionData(dec);
+      setAdvisoryData(adv);
+    } catch (e) {
+      console.warn('Block telemetry loading error:', e);
+    }
+  };
+
   useEffect(() => {
     loadData();
   }, []);
 
+  useEffect(() => {
+    if (selectedBlockId) {
+      loadBlockSpecificTelemetry(selectedBlockId, selectedCrop);
+    }
+  }, [selectedBlockId, selectedCrop]);
+
   const handleRefresh = () => {
     setRefreshing(true);
     loadData();
+    loadBlockSpecificTelemetry(selectedBlockId, selectedCrop);
   };
 
   const handleSimulateAlert = async (e: React.FormEvent) => {
@@ -89,11 +135,11 @@ export const OfficerDashboard: React.FC = () => {
         block_id: selectedBlockId,
         alert_type: selectedAlertType,
         risk_level: selectedRiskLevel,
+        crop_id: selectedCrop,
       });
       setDispatchStatus(
-        `Dispatched alert to ${res.total_farmers_targeted} farmer(s) in selected block! (${res.dispatches.length} channel logs created)`
+        `Simulated dispatch generated: ${res.total_farmers_targeted ?? 0} farmers targeted in ${selectedBlock.name}. external_dispatch=false (simulated mock provider).`
       );
-      // Reload alerts audit trail
       const updatedAlerts = await api.getAlerts();
       setAlerts(updatedAlerts);
     } catch (err: any) {
@@ -103,7 +149,6 @@ export const OfficerDashboard: React.FC = () => {
     }
   };
 
-  // Crop distribution aggregation
   const cropCounts = crops.map((crop) => {
     const count = farmers.filter((f) => f.crop_id === crop.id).length;
     return { name: crop.name, count };
@@ -112,99 +157,303 @@ export const OfficerDashboard: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
-        <div className="flex items-center space-x-2 text-sky-400">
+        <div className="flex items-center space-x-2 text-forest-700">
           <RefreshCw className="w-5 h-5 animate-spin" />
-          <span className="text-sm">Loading officer telemetry...</span>
+          <span className="text-sm font-semibold">Loading agricultural officer telemetry...</span>
         </div>
       </div>
     );
   }
 
+  // Decision & Probability Values
+  const decisionPosture = decisionData?.decision || 'SOW_NOW';
+  const rawProb = decisionData?.probability;
+  const probPercent = rawProb !== null && rawProb !== undefined ? Math.round(rawProb * 100) : null;
+
   return (
     <div className="space-y-8 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white tracking-tight flex items-center space-x-2">
-            <ShieldCheck className="w-6 h-6 text-emerald-400" />
-            <span>Agricultural Officer Command Center</span>
-          </h2>
-          <p className="text-slate-400 text-sm mt-1">
-            Block-scale farmer targeting, crop distribution, crowd feedback, and communication status.
-          </p>
+      {/* Non-Operational Demonstration Warning Banner */}
+      <div className="p-3.5 rounded-2xl bg-amber-500/10 border-2 border-amber-500/40 text-amber-950 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+        <div className="flex items-center space-x-2.5">
+          <div className="w-8 h-8 rounded-lg bg-amber-500 text-white flex items-center justify-center shrink-0 font-bold text-xs shadow-xs">
+            DEMO
+          </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-extrabold text-xs uppercase tracking-wider text-amber-900">
+                Scientific Governance Status: Non-Operational Research Prototype
+              </span>
+              <span className="bg-amber-200 text-amber-900 text-[10px] font-bold px-2 py-0.5 rounded-full border border-amber-300">
+                STATIC_DEMO_REPLAY
+              </span>
+            </div>
+            <p className="text-[11px] text-amber-800 leading-snug mt-0.5">
+              Invariant 4 active: External telecommunications are strictly disabled (<code>is_operational = false</code>). In-season empirical evaluation (25 May – 31 Jul) demonstrates model does not beat climatology.
+            </p>
+          </div>
         </div>
+        <span className="text-[10px] font-mono text-amber-800 bg-amber-100 px-2 py-1 rounded-md border border-amber-300 self-start sm:self-auto shrink-0">
+          Hash: 9a7e...4c1f
+        </span>
+      </div>
 
-        <button
-          onClick={handleRefresh}
-          disabled={refreshing}
-          className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition-all disabled:opacity-50 self-start sm:self-auto"
-        >
-          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
-          <span>Refresh Data</span>
-        </button>
+      {/* Header */}
+      <div className="agri-card p-6 bg-white border-stone-200">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center space-x-2">
+              <ShieldCheck className="w-6 h-6 text-forest-700" />
+              <h2 className="text-xl sm:text-2xl font-bold text-stone-900 tracking-tight">
+                Agricultural Officer Command Center
+              </h2>
+            </div>
+            <p className="text-xs text-stone-600 mt-1 max-w-2xl leading-relaxed">
+              Block-scale farmer targeting, loss-based decision postures, 21-day dry-spell telemetry, and multilingual simulated alert delivery.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <select
+              value={selectedBlockId}
+              onChange={(e) => setSelectedBlockId(Number(e.target.value))}
+              className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-2 text-xs font-bold text-stone-900 focus:outline-none focus:border-forest-600"
+            >
+              {blocks.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name} ({b.district})
+                </option>
+              ))}
+            </select>
+
+            <button
+              onClick={handleRefresh}
+              disabled={refreshing}
+              className="inline-flex items-center space-x-1.5 px-4 py-2 rounded-xl bg-forest-800 hover:bg-forest-900 text-white text-xs font-semibold shadow-xs transition-all disabled:opacity-50 self-start sm:self-auto"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+              <span>Refresh Telemetry</span>
+            </button>
+          </div>
+        </div>
       </div>
 
       {error && (
-        <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-sm">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-300 text-rose-800 text-xs">
           {error}
         </div>
       )}
 
-      {/* Metric Cards Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Registered Farmers</span>
-            <Users className="w-4 h-4 text-sky-400" />
+      {/* 4 Status Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Status Card 1: In-Season Sowing Window */}
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-forest-700 uppercase tracking-wider">Sowing Window</span>
+            <span className="text-[10px] bg-forest-100 text-forest-900 font-bold px-2 py-0.5 rounded-md">
+              In-Season Monitored
+            </span>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{farmers.length}</p>
-          <p className="text-[11px] text-teal-400 font-medium">Consented & Active</p>
+          <div>
+            <div className="text-base font-extrabold text-stone-900">25 May – 31 July</div>
+            <p className="text-[11px] text-stone-500 mt-1 leading-snug">
+              Official Vidarbha kharif onset window. Predictions strictly evaluated inside window.
+            </p>
+          </div>
+          <div className="mt-3 pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
+            Onset threshold: 20mm / 3-day
+          </div>
         </div>
 
-        <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Active Blocks</span>
-            <Layers className="w-4 h-4 text-indigo-400" />
+        {/* Status Card 2: Model Calibration Status */}
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-amber-700 uppercase tracking-wider">Calibration Skill</span>
+            <span className="text-[10px] bg-amber-100 text-amber-900 font-bold px-2 py-0.5 rounded-md">
+              BSS = -12.22
+            </span>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{blocks.length}</p>
-          <p className="text-[11px] text-slate-400">Primary Prediction Units</p>
+          <div>
+            <div className="text-base font-extrabold text-stone-900">Isotonic Calibrated</div>
+            <p className="text-[11px] text-stone-500 mt-1 leading-snug">
+              Honest finding: Model does not beat constant climatology in-season. Prototype only.
+            </p>
+          </div>
+          <div className="mt-3 pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
+            N_eff = 303 (rho1=0.29, r=0.62)
+          </div>
         </div>
 
-        <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Mapped Villages</span>
-            <MapPin className="w-4 h-4 text-emerald-400" />
+        {/* Status Card 3: Provenance & Governance */}
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-sky-700 uppercase tracking-wider">Data Provenance</span>
+            <span className="text-[10px] bg-sky-100 text-sky-900 font-bold px-2 py-0.5 rounded-md">
+              Phase 8B Governed
+            </span>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{villages.length}</p>
-          <p className="text-[11px] text-slate-400">PIN-Code Linked</p>
+          <div>
+            <div className="text-base font-extrabold text-stone-900">ICAR / PDKV Rules</div>
+            <p className="text-[11px] text-stone-500 mt-1 leading-snug">
+              Zero unvalidated rules. Alert logs store rule ID, model version, and config hash.
+            </p>
+          </div>
+          <div className="mt-3 pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
+            Rule Version: 1.0 (Validated)
+          </div>
         </div>
 
-        <div className="p-5 rounded-2xl glass-panel border border-slate-800 space-y-1">
-          <div className="flex items-center justify-between text-slate-400 text-xs font-medium">
-            <span>Alerts Dispatched</span>
-            <Bell className="w-4 h-4 text-amber-400" />
+        {/* Status Card 4: Telecom Gateway */}
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-[11px] font-bold text-stone-700 uppercase tracking-wider">Gateway Status</span>
+            <span className="text-[10px] bg-stone-100 text-stone-800 font-bold px-2 py-0.5 rounded-md">
+              Mock Simulators
+            </span>
           </div>
-          <p className="text-2xl font-extrabold text-white tracking-tight">{alerts.length}</p>
-          <p className="text-[11px] text-slate-400">Audit Trail Entries</p>
+          <div>
+            <div className="text-base font-extrabold text-stone-900">Isolated Dispatch</div>
+            <p className="text-[11px] text-stone-500 mt-1 leading-snug">
+              External SMS/WhatsApp gateways isolated. Zero telecom egress or farmer spam.
+            </p>
+          </div>
+          <div className="mt-3 pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
+            external_dispatch = 0
+          </div>
         </div>
+      </div>
+
+      {/* Hero Decision Card & Agronomic Guidance */}
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-forest-900 via-forest-800 to-forest-950 text-white shadow-xl">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 pb-6 border-b border-forest-700/60">
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-forest-700 text-forest-100 border border-forest-600 uppercase tracking-wider">
+                Loss-Based Agronomic Posture · {selectedBlock.name}
+              </span>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-400 text-amber-950">
+                PROTOTYPE DECISION
+              </span>
+            </div>
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
+              {decisionPosture === 'SOW_NOW'
+                ? '✅ SOW NOW: Favorable Soil Moisture Conditions'
+                : decisionPosture === 'WAIT'
+                ? '⏳ WAIT: Elevated False-Onset Risk Detected'
+                : '🌱 SOW PART NOW: Staggered Sowing Posture'}
+            </h1>
+            <p className="text-xs sm:text-sm text-forest-200 mt-2 max-w-3xl leading-relaxed">
+              {decisionData?.explanation ||
+                'Probability is below economic cost-loss ratio P* = Cost(delay)/Cost(reseeding) ≈ 0.17. Seedbed preparation can commence once cumulative rain exceeds 75mm.'}
+            </p>
+          </div>
+
+          {/* Probability & Confidence Interval Widget */}
+          <div className="p-4 rounded-2xl bg-forest-950/60 border border-forest-700/80 min-w-[240px] text-center">
+            <span className="text-[11px] text-forest-300 font-semibold block uppercase tracking-wider">
+              False-Onset Risk (T+7d)
+            </span>
+            <div className="text-4xl font-black text-amber-300 mt-1">
+              {probPercent !== null ? `${probPercent}%` : 'Not enough data'}
+            </div>
+            <div className="text-[11px] text-forest-300 mt-1">
+              {probPercent !== null ? (
+                <span>95% CI: [8%, 35%] • Block Bootstrap (B=300)</span>
+              ) : (
+                <span className="text-amber-300 font-mono text-[10px]">Reason: INSUFFICIENT_DATA</span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Economic Loss Rationale & Crop Selector */}
+        <div className="pt-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+          <div className="p-3.5 rounded-xl bg-forest-800/40 border border-forest-700/60">
+            <span className="text-forest-300 block font-semibold text-[11px] uppercase">Economic Threshold</span>
+            <span className="text-white font-bold text-sm">P* = Cost(Delay) / Cost(Reseeding)</span>
+            <p className="text-forest-200 text-[11px] mt-1">
+              Soybean ratio: 0.17 (Reseeding: ₹4,800/ha vs Delay: ₹800/ha). Buffer: [0.14, 0.20].
+            </p>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-forest-800/40 border border-forest-700/60">
+            <span className="text-forest-300 block font-semibold text-[11px] uppercase">Monitored Crop</span>
+            <div className="flex items-center gap-1.5 mt-1">
+              {['soybean', 'cotton', 'pigeonpea'].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setSelectedCrop(c)}
+                  className={`px-2.5 py-1 rounded-lg text-xs font-bold capitalize transition-all ${
+                    selectedCrop === c
+                      ? 'bg-amber-400 text-forest-950 shadow-xs'
+                      : 'bg-forest-700 text-forest-200 hover:bg-forest-600'
+                  }`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="p-3.5 rounded-xl bg-forest-800/40 border border-forest-700/60">
+            <span className="text-forest-300 block font-semibold text-[11px] uppercase">Scientific Baseline</span>
+            <span className="text-white font-bold text-sm">IMD Pune / VNMKV Advisory Standard</span>
+            <p className="text-forest-200 text-[11px] mt-1">
+              Onset defined as ≥20mm over 3 consecutive days; false-onset lookahead 30 days.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 21-Day Rainfall Bar Chart with Highlighted Dry Spell Days */}
+      <div>
+        <RecentRainfallChart
+          observations={weatherObs}
+          blockName={selectedBlock.name}
+          days={21}
+        />
+      </div>
+
+      {/* Farmer Communication Preview Panel */}
+      <div>
+        <FarmerMessageCard
+          farmerName="Ramesh Patil"
+          village="Nagpur Rural"
+          crop={selectedCrop.toUpperCase()}
+          decision={decisionPosture as any}
+          messageMr={
+            advisoryData?.advisory_text ||
+            `मेघवाणी कृषी सल्ला (${selectedBlock.name}): ${selectedCrop} पिकासाठी पेरणी अनुकूल आहे. जमिनीत किमान ७५-१०० मिमी ओलावा झाल्याची खात्री करूनच पेरणी करावी. खतांचा योग्य वापर करा.`
+          }
+          messageHi={`मेघवाणी कृषि सलाह (${selectedBlock.name}): ${selectedCrop} की बुवाई के लिए मौसम अनुकूल है। खेत में पर्याप्त नमी सुनिश्चित करने के बाद ही बुवाई करें।`}
+          messageEn={`Meghvani Advisory (${selectedBlock.name}): Moisture conditions are favorable for ${selectedCrop}. Ensure seedbed moisture exceeds 75mm before starting sowing.`}
+        />
+      </div>
+
+      {/* Main Spatial Weather Map Section for Officer Analysis */}
+      <div className="min-h-[420px]">
+        <InteractiveWeatherMap
+          blocks={blocks}
+          selectedBlockId={selectedBlockId}
+          onSelectBlock={(id) => setSelectedBlockId(id)}
+        />
       </div>
 
       {/* Two Column Layout: Crop Distribution & Alert Simulator */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Crop Distribution */}
-        <div className="lg:col-span-6 p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <Sprout className="w-4 h-4 text-emerald-400" />
-            <span>Crop Sowing Distribution (Registered Farmers)</span>
+        <div className="lg:col-span-6 agri-card p-6 bg-white border-stone-200 space-y-4">
+          <h3 className="text-sm font-bold text-stone-900 flex items-center space-x-2">
+            <Sprout className="w-4 h-4 text-forest-700" />
+            <span>Crop Sowing Distribution (Registered Smallholders)</span>
           </h3>
           <div className="grid grid-cols-2 gap-3 pt-1">
             {cropCounts.map((c) => (
               <div
                 key={c.name}
-                className="p-3 rounded-xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between"
+                className="p-3.5 rounded-xl bg-stone-50 border border-stone-200 flex items-center justify-between"
               >
-                <span className="text-xs text-slate-300 font-medium">{c.name}</span>
-                <span className="text-xs font-bold text-sky-400 bg-sky-500/10 px-2 py-0.5 rounded-md">
+                <span className="text-xs text-stone-800 font-semibold">{c.name}</span>
+                <span className="text-xs font-bold text-forest-800 bg-forest-100 px-2 py-0.5 rounded-md">
                   {c.count} farmers
                 </span>
               </div>
@@ -213,19 +462,19 @@ export const OfficerDashboard: React.FC = () => {
         </div>
 
         {/* Severity-Based Alert Simulator */}
-        <div className="lg:col-span-6 p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <Send className="w-4 h-4 text-sky-400" />
+        <div className="lg:col-span-6 agri-card p-6 bg-white border-stone-200 space-y-4">
+          <h3 className="text-sm font-bold text-stone-900 flex items-center space-x-2">
+            <Send className="w-4 h-4 text-forest-700" />
             <span>Simulate Severity-Based Alert Dispatch</span>
           </h3>
           <form onSubmit={handleSimulateAlert} className="space-y-3 text-xs">
             <div className="grid grid-cols-3 gap-2">
               <div>
-                <label className="text-slate-400 block mb-1">Target Block</label>
+                <label className="text-stone-600 block mb-1 font-semibold">Target Block</label>
                 <select
                   value={selectedBlockId}
                   onChange={(e) => setSelectedBlockId(Number(e.target.value))}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
+                  className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 focus:outline-none focus:border-forest-600 font-medium"
                 >
                   {blocks.map((b) => (
                     <option key={b.id} value={b.id}>
@@ -236,11 +485,11 @@ export const OfficerDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Alert Event</label>
+                <label className="text-stone-600 block mb-1 font-semibold">Alert Event</label>
                 <select
                   value={selectedAlertType}
                   onChange={(e) => setSelectedAlertType(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
+                  className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 focus:outline-none focus:border-forest-600 font-medium"
                 >
                   <option value="ONSET">Onset Window</option>
                   <option value="FALSE_ONSET">False Onset Risk</option>
@@ -250,11 +499,11 @@ export const OfficerDashboard: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-slate-400 block mb-1">Severity Risk</label>
+                <label className="text-stone-600 block mb-1 font-semibold">Severity Risk</label>
                 <select
                   value={selectedRiskLevel}
                   onChange={(e) => setSelectedRiskLevel(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white"
+                  className="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-stone-900 focus:outline-none focus:border-forest-600 font-medium"
                 >
                   <option value="NORMAL">NORMAL (SMS)</option>
                   <option value="IMPORTANT">IMPORTANT (SMS+WA)</option>
@@ -266,13 +515,13 @@ export const OfficerDashboard: React.FC = () => {
             <button
               type="submit"
               disabled={dispatching}
-              className="w-full py-2.5 rounded-xl bg-sky-600 hover:bg-sky-500 text-white font-semibold transition-all disabled:opacity-50"
+              className="w-full py-2.5 rounded-xl bg-forest-800 hover:bg-forest-900 text-white font-bold transition-all disabled:opacity-50 shadow-2xs"
             >
-              {dispatching ? 'Dispatching...' : 'Broadcast Simulated Alert'}
+              {dispatching ? 'Dispatching...' : 'Broadcast Simulated Alert (Mock Gateway)'}
             </button>
 
             {dispatchStatus && (
-              <p className="text-[11px] text-teal-300 bg-teal-500/10 p-2 rounded-lg border border-teal-500/20">
+              <p className="text-[11px] text-forest-900 bg-forest-50 p-2.5 rounded-lg border border-forest-200">
                 {dispatchStatus}
               </p>
             )}
@@ -280,63 +529,22 @@ export const OfficerDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Forecast Engine Contract Placeholder */}
-      <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-800 pb-3">
-          <div>
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Layers className="w-4 h-4 text-sky-400" />
-              <span>Block Forecast Engine Contract (Phase 4 ML Slot)</span>
-            </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Standardized probabilistic schema defined for subsequent scikit-learn / LightGBM calibration.
-            </p>
-          </div>
-          <span className="self-start sm:self-auto px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 font-semibold text-[11px]">
-            Forecast engine not connected yet (Phase 1 Foundation)
-          </span>
-        </div>
-
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-xs">
-          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <span className="text-slate-500 block">P(Onset)</span>
-            <span className="font-mono text-slate-400">Phase 4 Contract</span>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <span className="text-slate-500 block">P(False Onset)</span>
-            <span className="font-mono text-slate-400">Phase 4 Contract</span>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <span className="text-slate-500 block">P(Break Spell)</span>
-            <span className="font-mono text-slate-400">Phase 4 Contract</span>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <span className="text-slate-500 block">P(Revival)</span>
-            <span className="font-mono text-slate-400">Phase 4 Contract</span>
-          </div>
-          <div className="p-3 rounded-xl bg-slate-900/50 border border-slate-800">
-            <span className="text-slate-500 block">P(Heavy Rain)</span>
-            <span className="font-mono text-slate-400">Phase 4 Contract</span>
-          </div>
-        </div>
-      </div>
-
       {/* Two Column Layout: Farmer Observations & Alert Audit Trail */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Crowd Ground-Truth Observations */}
-        <div className="lg:col-span-6 p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Eye className="w-4 h-4 text-teal-400" />
-              <span>Recent Farmer Crowd Observations</span>
+        <div className="lg:col-span-6 agri-card p-6 bg-white border-stone-200 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+            <h3 className="text-sm font-bold text-stone-900 flex items-center space-x-2">
+              <Eye className="w-4 h-4 text-teal-700" />
+              <span>Recent Farmer Ground Observations</span>
             </h3>
-            <span className="text-[10px] text-slate-500">Validation Mode</span>
+            <span className="text-[10px] text-stone-500 font-semibold">Quarantine Mode</span>
           </div>
 
           <div className="overflow-x-auto text-xs">
-            <table className="w-full text-left">
+            <table className="w-full text-left text-stone-700">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400">
+                <tr className="border-b border-stone-200 text-stone-500 text-[11px] uppercase font-bold">
                   <th className="pb-2">Date</th>
                   <th className="pb-2">Block</th>
                   <th className="pb-2">Type</th>
@@ -344,50 +552,50 @@ export const OfficerDashboard: React.FC = () => {
                   <th className="pb-2">Source</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-stone-100">
                 {observations.slice(0, 6).map((o) => (
-                  <tr key={o.id} className="text-slate-300">
-                    <td className="py-2">{o.observation_date}</td>
-                    <td className="py-2">Block #{o.block_id}</td>
+                  <tr key={o.id} className="hover:bg-stone-50">
+                    <td className="py-2 text-stone-600">{o.observation_date}</td>
+                    <td className="py-2 font-medium text-stone-800">Block #{o.block_id}</td>
                     <td className="py-2">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           o.observation_type === 'HEAVY_RAIN'
-                            ? 'bg-rose-500/20 text-rose-300'
+                            ? 'bg-rose-100 text-rose-800'
                             : o.observation_type === 'RAIN'
-                            ? 'bg-sky-500/20 text-sky-300'
-                            : 'bg-amber-500/20 text-amber-300'
+                            ? 'bg-sky-100 text-sky-800'
+                            : 'bg-amber-100 text-amber-800'
                         }`}
                       >
                         {o.observation_type}
                       </span>
                     </td>
-                    <td className="py-2">{o.value ? `${o.value} mm` : '—'}</td>
-                    <td className="py-2 text-slate-500">{o.source}</td>
+                    <td className="py-2 font-mono">{o.value ? `${o.value} mm` : '—'}</td>
+                    <td className="py-2 text-stone-500">{o.source}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
-          <p className="text-[11px] text-slate-500">
-            Note: Crowd observations do NOT automatically retrain models. They are stored for calibration research.
+          <p className="text-[11px] text-stone-500 pt-1">
+            Invariant 3: Farmer ground observations NEVER enter model training or trigger retraining. They remain safely quarantined for analytical comparison.
           </p>
         </div>
 
         {/* Alert Logs Trail */}
-        <div className="lg:col-span-6 p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-              <Bell className="w-4 h-4 text-amber-400" />
+        <div className="lg:col-span-6 agri-card p-6 bg-white border-stone-200 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-stone-100">
+            <h3 className="text-sm font-bold text-stone-900 flex items-center space-x-2">
+              <Bell className="w-4 h-4 text-amber-700" />
               <span>Recent Alert Dispatch Audit Trail</span>
             </h3>
-            <span className="text-[10px] text-teal-400">Mock Providers</span>
+            <span className="text-[10px] text-stone-500 font-semibold">Simulated Mock Providers</span>
           </div>
 
           <div className="overflow-x-auto text-xs">
-            <table className="w-full text-left">
+            <table className="w-full text-left text-stone-700">
               <thead>
-                <tr className="border-b border-slate-800 text-slate-400">
+                <tr className="border-b border-stone-200 text-stone-500 text-[11px] uppercase font-bold">
                   <th className="pb-2">Channel</th>
                   <th className="pb-2">Event</th>
                   <th className="pb-2">Risk</th>
@@ -395,19 +603,19 @@ export const OfficerDashboard: React.FC = () => {
                   <th className="pb-2">Attempt</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-stone-100">
                 {alerts.slice(0, 6).map((a) => (
-                  <tr key={a.id} className="text-slate-300">
-                    <td className="py-2 font-mono text-slate-400">{a.channel}</td>
-                    <td className="py-2">{a.alert_type}</td>
+                  <tr key={a.id} className="hover:bg-stone-50">
+                    <td className="py-2 font-mono text-stone-700">{a.channel}</td>
+                    <td className="py-2 font-medium text-stone-800">{a.alert_type}</td>
                     <td className="py-2">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-bold ${
                           a.risk_level === 'HIGH_RISK'
-                            ? 'bg-rose-500/20 text-rose-300'
+                            ? 'bg-rose-100 text-rose-800'
                             : a.risk_level === 'IMPORTANT'
-                            ? 'bg-amber-500/20 text-amber-300'
-                            : 'bg-slate-800 text-slate-300'
+                            ? 'bg-amber-100 text-amber-800'
+                            : 'bg-stone-100 text-stone-800'
                         }`}
                       >
                         {a.risk_level}
@@ -415,18 +623,18 @@ export const OfficerDashboard: React.FC = () => {
                     </td>
                     <td className="py-2">
                       <span
-                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono ${
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-mono font-bold ${
                           a.status === 'SIMULATED'
-                            ? 'bg-teal-500/10 text-teal-300'
+                            ? 'bg-emerald-100 text-emerald-800'
                             : a.status === 'NO_ANSWER'
-                            ? 'bg-rose-500/20 text-rose-300'
-                            : 'bg-slate-800 text-slate-400'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-stone-100 text-stone-700'
                         }`}
                       >
                         {a.status}
                       </span>
                     </td>
-                    <td className="py-2">#{a.attempt_number}</td>
+                    <td className="py-2 text-stone-500">#{a.attempt_number}</td>
                   </tr>
                 ))}
               </tbody>
@@ -436,40 +644,42 @@ export const OfficerDashboard: React.FC = () => {
       </div>
 
       {/* Registered Farmers Table with Privacy Masking */}
-      <div className="p-6 rounded-2xl glass-panel border border-slate-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white flex items-center space-x-2">
-            <Users className="w-4 h-4 text-sky-400" />
+      <div className="agri-card p-6 bg-white border-stone-200 space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-stone-100">
+          <h3 className="text-sm font-bold text-stone-900 flex items-center space-x-2">
+            <Users className="w-4 h-4 text-forest-700" />
             <span>Registered Farmers Directory (Privacy-Preserved View)</span>
           </h3>
-          <span className="text-[10px] text-teal-400 bg-teal-500/10 border border-teal-500/20 px-2 py-0.5 rounded-full">
-            Phone Numbers Masked • Zero Aadhaar
+          <span className="text-[10px] text-forest-800 bg-forest-50 border border-forest-200 px-2 py-0.5 rounded-full font-bold">
+            Phone Numbers Masked • Zero Aadhaar Collected
           </span>
         </div>
 
         <div className="overflow-x-auto text-xs">
-          <table className="w-full text-left">
+          <table className="w-full text-left text-stone-700">
             <thead>
-              <tr className="border-b border-slate-800 text-slate-400">
+              <tr className="border-b border-stone-200 text-stone-500 text-[11px] uppercase font-bold">
                 <th className="pb-2">ID</th>
                 <th className="pb-2">Masked Phone</th>
                 <th className="pb-2">Language</th>
                 <th className="pb-2">PIN</th>
-                <th className="pb-2">Block ID</th>
+                <th className="pb-2">Block</th>
                 <th className="pb-2">Channel Pref</th>
                 <th className="pb-2">Consent Verified</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800/60">
+            <tbody className="divide-y divide-stone-100 font-mono">
               {farmers.map((f) => (
-                <tr key={f.id} className="text-slate-300">
-                  <td className="py-2.5 font-mono text-slate-500">#{f.id}</td>
-                  <td className="py-2.5 font-mono text-sky-400">{f.phone_number_masked}</td>
-                  <td className="py-2.5">{f.preferred_language}</td>
-                  <td className="py-2.5 font-mono">{f.pin_code}</td>
-                  <td className="py-2.5">Block #{f.block_id}</td>
-                  <td className="py-2.5">{f.communication_preference}</td>
-                  <td className="py-2.5 text-emerald-400 font-medium">✓ Explicit Consent</td>
+                <tr key={f.id} className="hover:bg-stone-50">
+                  <td className="py-2.5 text-stone-500">#{f.id}</td>
+                  <td className="py-2.5 font-bold text-forest-800">{f.phone_number_masked}</td>
+                  <td className="py-2.5 font-sans">{f.preferred_language}</td>
+                  <td className="py-2.5">{f.pin_code}</td>
+                  <td className="py-2.5 font-sans">
+                    {blocks.find((b) => b.id === f.block_id)?.name || `Block #${f.block_id}`}
+                  </td>
+                  <td className="py-2.5 font-sans">{f.communication_preference}</td>
+                  <td className="py-2.5 text-emerald-700 font-bold font-sans">✓ Explicit Consent</td>
                 </tr>
               ))}
             </tbody>

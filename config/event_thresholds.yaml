@@ -7,7 +7,8 @@ thresholds:
   onset:
     onset_rainfall_mm: 20.0
     onset_window_days: 3
-    description: "Cumulative rainfall over consecutive window to trigger onset evaluation"
+    onset_lockout_days: 30
+    description: "Cumulative rainfall over consecutive window to trigger primary onset evaluation with lockout debounce"
   
   false_onset:
     false_onset_dry_spell_days: 7
@@ -15,18 +16,51 @@ thresholds:
     description: "Dry spell days within lookahead window following apparent onset trigger"
 
   break_spell:
+    break_dry_spell_days: 5
     break_dry_days_threshold: 5
     daily_rainfall_ceiling_mm: 2.5
     description: "Consecutive days with rainfall below ceiling during active monsoon"
 
   heavy_rain:
+    heavy_rainfall_mm: 64.5
     heavy_rain_daily_mm: 64.5
+    heavy_rain_window_days: 1
     very_heavy_rain_daily_mm: 115.5
-    description: "IMD benchmark standard categories for heavy rainfall alerts"
+    description: "Engineering benchmark categories for heavy rainfall alerts"
 
   revival:
     revival_rainfall_mm: 15.0
     revival_window_days: 2
-    description: "Rainfall required to break a declared dry/break spell"
+    description: "Rainfall required over window to declare revival after a declared dry/break spell"
 
-disclaimer: "PROTOTYPE DETECTION CRITERIA ONLY - NOT OFFICIAL IMD METEOROLOGICAL STANDARDS"
+  dry_spell:
+    daily_dry_ceiling_mm: 2.5
+    description: "Daily rainfall threshold below which a day is classified as dry"
+
+  intensity_classes:
+    zero_max: 0.0
+    light_max: 7.5
+    moderate_max: 64.4
+    heavy_min: 64.5
+    description: "Engineering rainfall intensity categorization (PROTOTYPE - NOT official IMD standards)"
+
+prediction:
+  forecast_horizons_days:
+    - 7
+    - 14
+    - 21
+    - 30
+  monsoon_months:
+    - 6
+    - 7
+    - 8
+    - 9
+  insufficient_history_min_days: 30
+  description: "Prediction horizons and seasonal parameters for supervised target engineering"
+
+decision:
+  low_risk_max: 0.30
+  high_risk_min: 0.60
+  description: "Prototype decision thresholds for converting false-onset probability into SOW_NOW, SOW_PART_NOW, or WAIT (DEMO ONLY - NOT validated agronomic thresholds)"
+
+disclaimer: "PROTOTYPE DETECTION CRITERIA ONLY - NOT OFFICIAL IMD METEOROLOGICAL STANDARDS. All definitions are engineering heuristic approximations for dataset preparation."

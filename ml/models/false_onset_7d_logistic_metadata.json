@@ -1,0 +1,293 @@
+{
+  "model_name": "LogisticRegressionBaseline",
+  "target": "target_false_onset_7d",
+  "horizon_days": 7,
+  "feature_names": [
+    "rainfall_mm",
+    "rainfall_3d",
+    "rainfall_5d",
+    "rainfall_7d",
+    "rainfall_14d",
+    "rainfall_30d",
+    "dry_spell_days",
+    "wet_spell_days",
+    "rainfall_change_3d",
+    "rainfall_change_7d",
+    "rainfall_ratio_3d_7d",
+    "month",
+    "day_of_year",
+    "monsoon_month_flag",
+    "days_since_last_onset",
+    "days_since_last_break",
+    "days_since_last_heavy_rain",
+    "days_since_last_revival"
+  ],
+  "evaluation_type": "single_year_chronological_prototype",
+  "evaluation_status": "INSUFFICIENT_EVENT_VARIATION",
+  "brier_score": 0.0,
+  "brier_skill_score": null,
+  "brier_skill_status": "not_interpretable_for_skill",
+  "roc_auc": "not available",
+  "pr_auc": "not available",
+  "chronological_evaluation": {
+    "evaluation_type": "single_year_chronological_prototype",
+    "status": "INSUFFICIENT_EVENT_VARIATION",
+    "train_start": "2025-06-01",
+    "train_end": "2025-08-24",
+    "test_start": "2025-08-25",
+    "test_end": "2025-09-30",
+    "train_rows": 255,
+    "test_rows": 111,
+    "train_positive_count": 6,
+    "test_positive_count": 0,
+    "test_negative_count": 111,
+    "brier_score": 0.0,
+    "brier_skill_score": null,
+    "brier_skill_status": "not_interpretable_for_skill",
+    "roc_auc": "not available",
+    "pr_auc": "not available",
+    "explanation": "The chronological test period contains no false-onset events. Therefore discrimination metrics such as ROC-AUC and PR-AUC cannot be computed, and the Brier/Brier Skill results should not be interpreted as verified forecast skill."
+  },
+  "diagnostic_evaluation": {
+    "evaluation_type": "single_year_historical_diagnostic",
+    "status": "DIAGNOSTIC_ONLY",
+    "total_diagnostic_rows": 366,
+    "positive_count": 6,
+    "negative_count": 360,
+    "positive_rate": 0.0164,
+    "brier_score": 0.0279,
+    "roc_auc": 0.9931,
+    "pr_auc": 0.6327,
+    "calibration_bins": [
+      {
+        "bin_index": 0,
+        "bin_range": "0.0-0.1",
+        "lower_bound": 0.0,
+        "upper_bound": 0.1,
+        "sample_count": 326,
+        "mean_predicted_probability": 0.0029,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 1,
+        "bin_range": "0.1-0.2",
+        "lower_bound": 0.1,
+        "upper_bound": 0.2,
+        "sample_count": 5,
+        "mean_predicted_probability": 0.1297,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 2,
+        "bin_range": "0.2-0.3",
+        "lower_bound": 0.2,
+        "upper_bound": 0.3,
+        "sample_count": 7,
+        "mean_predicted_probability": 0.2378,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 3,
+        "bin_range": "0.3-0.4",
+        "lower_bound": 0.3,
+        "upper_bound": 0.4,
+        "sample_count": 3,
+        "mean_predicted_probability": 0.3285,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 4,
+        "bin_range": "0.4-0.5",
+        "lower_bound": 0.4,
+        "upper_bound": 0.5,
+        "sample_count": 7,
+        "mean_predicted_probability": 0.4505,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 5,
+        "bin_range": "0.5-0.6",
+        "lower_bound": 0.5,
+        "upper_bound": 0.6,
+        "sample_count": 2,
+        "mean_predicted_probability": 0.5694,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 6,
+        "bin_range": "0.6-0.7",
+        "lower_bound": 0.6,
+        "upper_bound": 0.7,
+        "sample_count": 1,
+        "mean_predicted_probability": 0.6097,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 7,
+        "bin_range": "0.7-0.8",
+        "lower_bound": 0.7,
+        "upper_bound": 0.8,
+        "sample_count": 3,
+        "mean_predicted_probability": 0.7518,
+        "observed_event_frequency": 0.0
+      },
+      {
+        "bin_index": 8,
+        "bin_range": "0.8-0.9",
+        "lower_bound": 0.8,
+        "upper_bound": 0.9,
+        "sample_count": 3,
+        "mean_predicted_probability": 0.8572,
+        "observed_event_frequency": 0.3333
+      },
+      {
+        "bin_index": 9,
+        "bin_range": "0.9-1.0",
+        "lower_bound": 0.9,
+        "upper_bound": 1.0,
+        "sample_count": 9,
+        "mean_predicted_probability": 0.9671,
+        "observed_event_frequency": 0.5556
+      }
+    ],
+    "not_operational": true,
+    "explanation": "Diagnostic only \u2014 not a temporal forecast-skill estimate. Evaluates model capacity to separate historical false-onset events from non-events."
+  },
+  "calibration": {
+    "target": "target_false_onset_7d",
+    "horizon_days": 7,
+    "base_model": "LogisticRegressionBaseline",
+    "calibration_method": "sigmoid",
+    "training_period": "2025-06-01 to 2025-07-31",
+    "calibration_period": "2025-08-01 to 2025-08-30",
+    "evaluation_period": "2025-08-31 to 2025-09-30",
+    "train_row_count": 183,
+    "positive_count": 6,
+    "calibration_row_count": 90,
+    "calibration_positive_count": 0,
+    "evaluation_row_count": 93,
+    "evaluation_positive_count": 0,
+    "raw_brier_score": 1.7910516946072147e-10,
+    "calibrated_brier_score": null,
+    "improvement": null,
+    "calibration_status": "INSUFFICIENT_CALIBRATION_DATA",
+    "explanation": "Insufficient positive events for a scientifically reliable three-way temporal calibration split. All 6 false-onset events occurred during early June (2025-06-01 to 2025-07-31). The subsequent calibration period (2025-08-01 to 2025-08-30) contains 0 positive events, and the evaluation period (2025-08-31 to 2025-09-30) contains 0 positive events. Calibration parameters cannot be fitted without positive events in the calibration split.",
+    "scientific_warning": "Only six false-onset events are available in the current single-year dataset. A reliable temporal calibration experiment requires substantially more historical events.",
+    "is_operational_forecast": false,
+    "created_at": "2026-10-03T19:55:10.841045"
+  },
+  "feature_contributions": [
+    {
+      "feature_name": "day_of_year",
+      "coefficient": -1.5288,
+      "absolute_coefficient": 1.5288,
+      "interpretation": "Fitted linear weight: -1.5288. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "dry_spell_days",
+      "coefficient": -1.394,
+      "absolute_coefficient": 1.394,
+      "interpretation": "Fitted linear weight: -1.3940. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_14d",
+      "coefficient": -1.3105,
+      "absolute_coefficient": 1.3105,
+      "interpretation": "Fitted linear weight: -1.3105. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "days_since_last_onset",
+      "coefficient": -1.2639,
+      "absolute_coefficient": 1.2639,
+      "interpretation": "Fitted linear weight: -1.2639. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_7d",
+      "coefficient": -1.0096,
+      "absolute_coefficient": 1.0096,
+      "interpretation": "Fitted linear weight: -1.0096. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "days_since_last_break",
+      "coefficient": -1.0059,
+      "absolute_coefficient": 1.0059,
+      "interpretation": "Fitted linear weight: -1.0059. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_change_7d",
+      "coefficient": -1.0025,
+      "absolute_coefficient": 1.0025,
+      "interpretation": "Fitted linear weight: -1.0025. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_mm",
+      "coefficient": 0.961,
+      "absolute_coefficient": 0.961,
+      "interpretation": "Fitted linear weight: +0.9610. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_30d",
+      "coefficient": -0.9574,
+      "absolute_coefficient": 0.9574,
+      "interpretation": "Fitted linear weight: -0.9574. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_5d",
+      "coefficient": -0.798,
+      "absolute_coefficient": 0.798,
+      "interpretation": "Fitted linear weight: -0.7980. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_change_3d",
+      "coefficient": 0.7818,
+      "absolute_coefficient": 0.7818,
+      "interpretation": "Fitted linear weight: +0.7818. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_ratio_3d_7d",
+      "coefficient": -0.6948,
+      "absolute_coefficient": 0.6948,
+      "interpretation": "Fitted linear weight: -0.6948. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "wet_spell_days",
+      "coefficient": 0.4054,
+      "absolute_coefficient": 0.4054,
+      "interpretation": "Fitted linear weight: +0.4054. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "days_since_last_revival",
+      "coefficient": -0.2937,
+      "absolute_coefficient": 0.2937,
+      "interpretation": "Fitted linear weight: -0.2937. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "rainfall_3d",
+      "coefficient": -0.2456,
+      "absolute_coefficient": 0.2456,
+      "interpretation": "Fitted linear weight: -0.2456. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "month",
+      "coefficient": -0.0661,
+      "absolute_coefficient": 0.0661,
+      "interpretation": "Fitted linear weight: -0.0661. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "days_since_last_heavy_rain",
+      "coefficient": -0.0101,
+      "absolute_coefficient": 0.0101,
+      "interpretation": "Fitted linear weight: -0.0101. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    },
+    {
+      "feature_name": "monsoon_month_flag",
+      "coefficient": 0.0,
+      "absolute_coefficient": 0.0,
+      "interpretation": "Fitted linear weight: +0.0000. These coefficients indicate model association within the prototype dataset. They are not causal effects."
+    }
+  ],
+  "scientific_warning": "This is a single-year prototype dataset. The chronological test period contains zero false-onset events. Therefore the chronological evaluation does not establish verified forecast skill. The event-focused evaluation is diagnostic only and must not be interpreted as operational temporal forecast validation. Probability calibration is a prototype experiment: with only 6 positive events all in early June, subsequent calibration/evaluation periods have zero positive events, making operational calibration unvalidated.",
+  "dataset_version": "meghvani_demo_2025_v1",
+  "created_at": "2026-10-03T19:55:10.842947",
+  "disclaimer": "PROTOTYPE BASELINE MODEL ONLY. Evaluated on a single-year chronological demo dataset. Reported metrics are prototype diagnostics and do NOT represent verified multi-year operational forecasting skill."
+}

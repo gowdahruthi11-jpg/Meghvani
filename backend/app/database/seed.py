@@ -17,51 +17,68 @@ from app.models.farmer import Farmer
 from app.models.weather import WeatherObservation
 from app.models.farmer_observation import FarmerObservation
 from app.models.alert_log import AlertLog
-from app.config import crops_config
+from app.config import crops_config, blocks_config
 
 def seed_database():
     """
     Idempotent database seeder providing curated DEMO DATA.
     Ensures all baseline entities exist for testing and SIH 2026 demonstrations.
+    Reads canonical blocks from config/blocks.yaml.
     """
     Base.metadata.create_all(bind=engine)
     db: Session = SessionLocal()
 
     try:
-        # 1. Seed Blocks
+        # 1. Seed Blocks from canonical blocks_config
         if db.query(Block).count() == 0:
-            blocks = [
-                Block(
-                    id=1,
-                    name="Nagpur Rural",
-                    district="Nagpur",
-                    state="Maharashtra",
-                    latitude=21.1458,
-                    longitude=79.0882,
-                    boundary_reference="MH_NGP_01_DEMO",
-                    active=True
-                ),
-                Block(
-                    id=2,
-                    name="Wardha East",
-                    district="Wardha",
-                    state="Maharashtra",
-                    latitude=20.7453,
-                    longitude=78.6022,
-                    boundary_reference="MH_WRD_02_DEMO",
-                    active=True
-                ),
-                Block(
-                    id=3,
-                    name="Amravati Central",
-                    district="Amravati",
-                    state="Maharashtra",
-                    latitude=20.9374,
-                    longitude=77.7796,
-                    boundary_reference="MH_AMR_03_DEMO",
-                    active=True
-                ),
-            ]
+            blocks_raw = blocks_config.get("blocks", [])
+            if blocks_raw:
+                blocks = [
+                    Block(
+                        id=int(b["id"]),
+                        name=b["name"],
+                        district=b["district"],
+                        state=b.get("state", "Maharashtra"),
+                        latitude=float(b["latitude"]),
+                        longitude=float(b["longitude"]),
+                        boundary_reference=b.get("boundary_reference", f"MH_{b['district'][:3].upper()}_{int(b['id']):02d}_DEMO"),
+                        active=b.get("active", True)
+                    )
+                    for b in blocks_raw
+                ]
+            else:
+                blocks = [
+                    Block(
+                        id=1,
+                        name="Nagpur Rural",
+                        district="Nagpur",
+                        state="Maharashtra",
+                        latitude=21.1458,
+                        longitude=79.0882,
+                        boundary_reference="MH_NGP_01_DEMO",
+                        active=True
+                    ),
+                    Block(
+                        id=2,
+                        name="Wardha East",
+                        district="Wardha",
+                        state="Maharashtra",
+                        latitude=20.7453,
+                        longitude=78.6022,
+                        boundary_reference="MH_WRD_02_DEMO",
+                        active=True
+                    ),
+                    Block(
+                        id=3,
+                        name="Amravati Central",
+                        district="Amravati",
+                        state="Maharashtra",
+                        latitude=20.9374,
+                        longitude=77.7796,
+                        boundary_reference="MH_AMR_03_DEMO",
+                        active=True
+                    ),
+                ]
             db.add_all(blocks)
             db.commit()
 
@@ -233,27 +250,40 @@ def seed_database():
             db.add_all(farmers)
             db.commit()
 
-        # 5. Seed Weather Observations (10 days of DEMO DATA per block)
-        if db.query(WeatherObservation).count() == 0:
+        # 5. Seed Weather Observations (30 days of DEMO DATA per block for 7/15/30d horizons)
+        if db.query(WeatherObservation).count() < 90:
+            db.query(WeatherObservation).delete()
             today = date.today()
             obs_list = []
             
-            # Simulated 10-day rainfall sequence demonstrating onset buildup
-            rain_seq_b1 = [0.0, 1.2, 0.0, 4.5, 12.0, 24.5, 18.2, 5.0, 2.0, 0.5]
-            rain_seq_b2 = [0.0, 0.0, 0.0, 2.0, 3.5, 8.0, 32.0, 41.5, 14.0, 3.2]
-            rain_seq_b3 = [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 2.5, 0.0, 0.0, 0.0]
+            # Realistic 30-day rainfall sequence demonstrating monsoon progression
+            # Block 1 (Nagpur Rural): 23 pre-monsoon days followed by 7-day surge summing to 92.7 mm
+            rain_seq_b1 = (
+                [0.0, 0.0, 0.0, 1.5, 0.0, 0.0, 3.2, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 5.5, 0.0, 0.0, 1.0, 0.0, 0.0, 4.5, 0.0, 0.0]
+                + [12.0, 24.5, 18.2, 5.0, 2.0, 15.5, 15.5]
+            )
+            # Block 2 (Wardha East): 23 pre-monsoon days followed by 7-day onset summing to 64.2 mm
+            rain_seq_b2 = (
+                [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 2.5, 0.0, 0.0, 0.0, 0.0, 4.0, 0.0, 0.0, 0.0, 3.0, 0.0, 0.0, 2.0, 0.0, 0.0]
+                + [3.5, 8.0, 32.0, 12.0, 4.5, 2.2, 2.0]
+            )
+            # Block 3 (Amravati Central): 23 pre-monsoon days followed by 7-day convective showers summing to 48.0 mm
+            rain_seq_b3 = (
+                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.5, 0.0, 0.0]
+                + [2.0, 6.0, 18.0, 14.0, 5.0, 2.0, 1.0]
+            )
 
-            for i in range(10):
-                obs_date = today - timedelta(days=9 - i)
+            for i in range(30):
+                obs_date = today - timedelta(days=29 - i)
                 obs_list.append(
                     WeatherObservation(
                         block_id=1,
                         observation_date=obs_date,
                         rainfall_mm=rain_seq_b1[i],
-                        temperature_c=31.5 - (i * 0.4),
-                        humidity=65.0 + (i * 2.5),
-                        wind_speed=14.2,
-                        soil_moisture=0.22 + (rain_seq_b1[i] * 0.005),
+                        temperature_c=round(34.0 - (i * 0.15) - (rain_seq_b1[i] * 0.1), 1),
+                        humidity=min(95.0, round(52.0 + (i * 0.8) + (rain_seq_b1[i] * 0.6), 1)),
+                        wind_speed=round(12.0 + (i % 5) * 0.5, 1),
+                        soil_moisture=min(0.45, round(0.18 + (rain_seq_b1[i] * 0.008), 3)),
                         source="DEMO_DATA"
                     )
                 )
@@ -262,10 +292,10 @@ def seed_database():
                         block_id=2,
                         observation_date=obs_date,
                         rainfall_mm=rain_seq_b2[i],
-                        temperature_c=32.0 - (i * 0.3),
-                        humidity=62.0 + (i * 2.8),
-                        wind_speed=12.5,
-                        soil_moisture=0.20 + (rain_seq_b2[i] * 0.005),
+                        temperature_c=round(33.5 - (i * 0.12) - (rain_seq_b2[i] * 0.1), 1),
+                        humidity=min(95.0, round(50.0 + (i * 0.75) + (rain_seq_b2[i] * 0.5), 1)),
+                        wind_speed=round(11.5 + (i % 4) * 0.6, 1),
+                        soil_moisture=min(0.42, round(0.16 + (rain_seq_b2[i] * 0.007), 3)),
                         source="DEMO_DATA"
                     )
                 )
@@ -274,10 +304,10 @@ def seed_database():
                         block_id=3,
                         observation_date=obs_date,
                         rainfall_mm=rain_seq_b3[i],
-                        temperature_c=34.0,
-                        humidity=48.0,
-                        wind_speed=10.0,
-                        soil_moisture=0.15,
+                        temperature_c=round(35.0 - (i * 0.1) - (rain_seq_b3[i] * 0.1), 1),
+                        humidity=min(95.0, round(45.0 + (i * 0.7) + (rain_seq_b3[i] * 0.5), 1)),
+                        wind_speed=round(10.0 + (i % 3) * 0.4, 1),
+                        soil_moisture=min(0.38, round(0.14 + (rain_seq_b3[i] * 0.006), 3)),
                         source="DEMO_DATA"
                     )
                 )

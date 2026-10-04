@@ -19,6 +19,8 @@ class Settings(BaseSettings):
     database_url: str = f"sqlite:///{BACKEND_DIR / 'meghvani.db'}"
     api_prefix: str = "/api"
     secret_key: str = "meghvani-prototype-secret-salt-2026"
+    officer_api_key: str = "meghvani-officer-dev-key-2026"
+    require_officer_auth: bool = False
     cors_origins: List[str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
@@ -43,7 +45,10 @@ settings = Settings()
 
 # Loaded configurations from YAML
 app_config = load_yaml("app.yaml")
-event_thresholds_config = load_yaml("event_thresholds.yaml")
+event_definitions_config = load_yaml("event_definitions.yaml")
+event_thresholds_config = event_definitions_config or load_yaml("event_thresholds.yaml")
+blocks_config = load_yaml("blocks.yaml")
 crops_config = load_yaml("crops.yaml")
 communication_config = load_yaml("communication.yaml")
 advisory_rules_config = load_yaml("advisory_rules.yaml")
+decision_costs_config = load_yaml("decision_costs.yaml")

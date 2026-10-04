@@ -1,37 +1,102 @@
+@import "leaflet/dist/leaflet.css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  color-scheme: light;
 }
 
-/* Glassmorphism styling helpers */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.75);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+body {
+  background-color: #F7F7F2;
+  color: #1F2937;
 }
 
-.glass-panel-elevated {
-  background: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+/* Custom Leaflet overrides for clean agricultural aesthetics */
+.leaflet-container {
+  font-family: inherit;
+  background-color: #EFF6FF !important;
+  border-radius: 1rem;
+  z-index: 10;
+}
+
+.leaflet-popup-content-wrapper {
+  padding: 0 !important;
+  border-radius: 1rem !important;
+  box-shadow: 0 10px 25px -5px rgba(20, 83, 45, 0.15), 0 8px 10px -6px rgba(20, 83, 45, 0.1) !important;
+  border: 1px solid #E5E7EB !important;
+  overflow: hidden !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.leaflet-popup-tip {
+  background: #FFFFFF !important;
+}
+
+/* Agriculture design system helper classes */
+.agri-card {
+  background-color: #FFFFFF;
+  border: 1px solid #E7E5E4;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease-in-out;
+}
+
+.agri-card:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.06), 0 2px 4px -2px rgba(0, 0, 0, 0.04);
+}
+
+.agri-card-elevated {
+  background-color: #FFFFFF;
+  border: 1px solid #E7E5E4;
+  border-radius: 1.25rem;
+  box-shadow: 0 10px 15px -3px rgba(27, 67, 50, 0.06), 0 4px 6px -4px rgba(27, 67, 50, 0.04);
+}
+
+.agri-header-gradient {
+  background: linear-gradient(135deg, #133826 0%, #1B4332 60%, #2D6A4F 100%);
+}
+
+.agri-subtle-gradient {
+  background: linear-gradient(180deg, #F4FBF7 0%, #FAF9F5 100%);
+}
+
+/* Decision badges */
+.badge-sow-now {
+  background-color: #DCFCE7;
+  color: #14532D;
+  border: 1px solid #86EFAC;
+}
+
+.badge-sow-part {
+  background-color: #FEF3C7;
+  color: #78350F;
+  border: 1px solid #FCD34D;
+}
+
+.badge-wait {
+  background-color: #FEE2E2;
+  color: #7F1D1D;
+  border: 1px solid #FCA5A5;
 }
 
 /* Custom scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #F5F3EC;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 3px;
+  background: #D7D3C8;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #A8A29E;
 }

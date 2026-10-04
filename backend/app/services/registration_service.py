@@ -168,13 +168,14 @@ class RegistrationService:
             session.current_step = "PIN"
             session.updated_at = datetime.now(timezone.utc)
             db.commit()
-            return "Enter your 6-digit PIN code.", "PIN", False, None
+            return "Enter your 6-digit PIN code (e.g. 441501, 442104, 444904).", "PIN", False, None
 
         # -------------------------------------------------------------
         # STEP 2: PIN CODE ENTRY
         # -------------------------------------------------------------
         if step == "PIN":
-            if not text.isdigit() or len(text) != 6:
+            clean_pin = text.replace(" ", "").replace("-", "").strip()
+            if not clean_pin.isdigit() or len(clean_pin) != 6:
                 return (
                     "Invalid PIN code. Please enter exactly 6 numeric digits (e.g., 440001).",
                     "PIN",
@@ -182,23 +183,23 @@ class RegistrationService:
                     None
                 )
 
-            villages = LocationService.get_villages_by_pin(db, text)
+            villages = LocationService.get_villages_by_pin(db, clean_pin)
             if not villages:
                 return (
-                    f"No villages found for PIN {text}. Please re-enter a valid 6-digit PIN code.",
+                    f"No villages found for PIN {clean_pin}. Please re-enter a valid 6-digit PIN code.",
                     "PIN",
                     False,
                     None
                 )
 
-            session.pin_code = text
+            session.pin_code = clean_pin
             session.current_step = "VILLAGE"
             session.updated_at = datetime.now(timezone.utc)
             db.commit()
 
             # Build village selection prompt
             village_lines = [f"{i+1}: {v.name} (District: {v.district})" for i, v in enumerate(villages)]
-            prompt = "Select your village:\n" + "\n".join(village_lines) + "\nReply with number (e.g. 1)."
+            prompt = f"PIN {clean_pin} accepted.\nSelect your village:\n" + "\n".join(village_lines) + "\nReply with number (e.g. 1)."
             return prompt, "VILLAGE", False, None
 
         # -------------------------------------------------------------

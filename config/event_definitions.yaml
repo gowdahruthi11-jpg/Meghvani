@@ -1,0 +1,73 @@
+# CANONICAL EVENT DEFINITIONS & THRESHOLDS FOR MEGHVANI
+# Single source of truth for agrometeorological event detection, prediction, and evaluation.
+# All parameters are externally configurable without modifying Python code.
+
+thresholds:
+  onset:
+    onset_rainfall_mm: 20.0
+    onset_window_days: 3
+    onset_lockout_days: 30
+    description: "Cumulative rainfall >= 20.0 mm over 3 consecutive days to trigger primary onset evaluation with 30-day lockout debounce"
+  
+  false_onset:
+    false_onset_dry_spell_days: 7
+    false_onset_lookahead_days: 30
+    daily_dry_ceiling_mm: 2.5
+    description: "Dry spell of >= 7 consecutive days (< 2.5 mm/day) within 30-day lookahead window following onset trigger"
+
+  break_spell:
+    break_dry_spell_days: 5
+    break_dry_days_threshold: 5
+    daily_rainfall_ceiling_mm: 2.5
+    description: "Consecutive days (>= 5) with daily rainfall < 2.5 mm during active monsoon"
+
+  heavy_rain:
+    heavy_rainfall_mm: 64.5
+    heavy_rain_daily_mm: 64.5
+    heavy_rain_window_days: 1
+    very_heavy_rain_daily_mm: 115.5
+    description: "IMD classification standard: Heavy rain lower bound is 64.5 mm/day, Very Heavy is >= 115.5 mm/day"
+
+  revival:
+    revival_rainfall_mm: 15.0
+    revival_window_days: 2
+    description: "Cumulative rainfall >= 15.0 mm over 2 days required to declare revival after break spell"
+
+  dry_spell:
+    daily_dry_ceiling_mm: 2.5
+    description: "Daily rainfall threshold below which a day is classified as dry (< 2.5 mm/day)"
+
+  intensity_classes:
+    zero_max: 0.0
+    light_max: 7.5
+    moderate_max: 64.4
+    heavy_min: 64.5
+    very_heavy_min: 115.5
+    description: "Standard IMD daily rainfall intensity categorization"
+
+prediction:
+  forecast_horizons_days:
+    - 7
+    - 14
+    - 21
+    - 30
+  monsoon_months:
+    - 6
+    - 7
+    - 8
+    - 9
+  in_season_window:
+    start_month: 5
+    start_day: 25
+    end_month: 7
+    end_day: 31
+    description: "Sowing-relevant evaluation window (25 May to 31 July) for false-onset risk"
+  insufficient_history_min_days: 30
+  description: "Prediction horizons and seasonal parameters for supervised target engineering"
+
+decision:
+  low_risk_max: 0.30
+  high_risk_min: 0.60
+  description: "Prototype decision thresholds for converting false-onset probability into SOW_NOW, SOW_PART_NOW, or WAIT (DEMO ONLY - NOT validated agronomic thresholds)"
+
+disclaimer: "CANONICAL DEFINITIONS - Sourced from IMD standards and established agrometeorological engineering rules."

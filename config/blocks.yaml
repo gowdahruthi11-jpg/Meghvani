@@ -1,0 +1,63 @@
+# CANONICAL BLOCK REGISTRY FOR MEGHVANI (VIDARBHA REGION)
+# Single source of truth for administrative blocks, coordinates, and IMD 0.25° grid mappings.
+
+blocks:
+  - id: 1
+    block_id: "BLK001"
+    name: "Nagpur Rural"
+    district: "Nagpur"
+    state: "Maharashtra"
+    latitude: 21.1458
+    longitude: 79.0882
+    boundary_reference: "MH_NGP_01_DEMO"
+    target_imd_grid_lat: 21.25
+    target_imd_grid_lon: 79.00
+    grid_lat_idx: 59
+    grid_lon_idx: 50
+    centroid_distance_km: 15.15
+    agro_climatic_zone: "Central Plateau and Hills"
+    major_crops:
+      - "Soybean"
+      - "Cotton"
+      - "Paddy"
+    active: true
+
+  - id: 2
+    block_id: "BLK002"
+    name: "Wardha East"
+    district: "Wardha"
+    state: "Maharashtra"
+    latitude: 20.7453
+    longitude: 78.6022
+    boundary_reference: "MH_WRD_02_DEMO"
+    target_imd_grid_lat: 20.75
+    target_imd_grid_lon: 78.50
+    grid_lat_idx: 57
+    grid_lon_idx: 48
+    centroid_distance_km: 11.36
+    agro_climatic_zone: "Central Plateau and Hills"
+    major_crops:
+      - "Cotton"
+      - "Soybean"
+      - "Pigeonpea"
+    active: true
+
+  - id: 3
+    block_id: "BLK003"
+    name: "Amravati Central"
+    district: "Amravati"
+    state: "Maharashtra"
+    latitude: 20.9374
+    longitude: 77.7796
+    boundary_reference: "MH_AMR_03_DEMO"
+    target_imd_grid_lat: 21.00
+    target_imd_grid_lon: 77.75
+    grid_lat_idx: 58
+    grid_lon_idx: 45
+    centroid_distance_km: 7.69
+    agro_climatic_zone: "Western Plateau and Hills"
+    major_crops:
+      - "Cotton"
+      - "Soybean"
+      - "Maize"
+    active: true

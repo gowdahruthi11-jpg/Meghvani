@@ -1,0 +1,23 @@
+{
+  "target": "target_false_onset_7d",
+  "horizon_days": 7,
+  "base_model": "LogisticRegressionBaseline",
+  "calibration_method": "sigmoid",
+  "training_period": "2025-06-01 to 2025-07-31",
+  "calibration_period": "2025-08-01 to 2025-08-30",
+  "evaluation_period": "2025-08-31 to 2025-09-30",
+  "train_row_count": 183,
+  "positive_count": 6,
+  "calibration_row_count": 90,
+  "calibration_positive_count": 0,
+  "evaluation_row_count": 93,
+  "evaluation_positive_count": 0,
+  "raw_brier_score": 1.7910516946072147e-10,
+  "calibrated_brier_score": null,
+  "improvement": null,
+  "calibration_status": "INSUFFICIENT_CALIBRATION_DATA",
+  "explanation": "Insufficient positive events for a scientifically reliable three-way temporal calibration split. All 6 false-onset events occurred during early June (2025-06-01 to 2025-07-31). The subsequent calibration period (2025-08-01 to 2025-08-30) contains 0 positive events, and the evaluation period (2025-08-31 to 2025-09-30) contains 0 positive events. Calibration parameters cannot be fitted without positive events in the calibration split.",
+  "scientific_warning": "Only six false-onset events are available in the current single-year dataset. A reliable temporal calibration experiment requires substantially more historical events.",
+  "is_operational_forecast": false,
+  "created_at": "2026-10-03T19:55:10.841045"
+}
