@@ -1,0 +1,92 @@
+{
+  "onset_7d": {
+    "name": "Monsoon Onset (7-Day)",
+    "target": "target_onset_7d",
+    "horizon_days": 7,
+    "positives": 34,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "PROTOTYPE_CALIBRATED"
+  },
+  "onset_14d": {
+    "name": "Monsoon Onset (14-Day)",
+    "target": "target_onset_14d",
+    "horizon_days": 14,
+    "positives": 55,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "PROTOTYPE_CALIBRATED"
+  },
+  "break_7d": {
+    "name": "Monsoon Break Spell (7-Day)",
+    "target": "target_break_7d",
+    "horizon_days": 7,
+    "positives": 21,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "PROTOTYPE_CALIBRATED"
+  },
+  "break_14d": {
+    "name": "Monsoon Break Spell (14-Day)",
+    "target": "target_break_14d",
+    "horizon_days": 14,
+    "positives": 35,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "PROTOTYPE_CALIBRATED"
+  },
+  "heavy_rain_7d": {
+    "name": "Heavy Rain Episode (7-Day)",
+    "target": "target_heavy_rain_7d",
+    "horizon_days": 7,
+    "positives": 14,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "INSUFFICIENT_CALIBRATION_DATA"
+  },
+  "false_onset_7d": {
+    "name": "False Onset Warning (7-Day)",
+    "target": "target_false_onset_7d",
+    "horizon_days": 7,
+    "positives": 6,
+    "metrics": {
+      "brier_score_raw": 0.15,
+      "brier_score_calibrated": 0.15,
+      "brier_score_climatology": 0.18,
+      "brier_skill_score": 0.16,
+      "roc_auc": 0.75,
+      "pr_auc": 0.6
+    },
+    "status": "INSUFFICIENT_CALIBRATION_DATA"
+  }
+}

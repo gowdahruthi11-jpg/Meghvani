@@ -2,15 +2,20 @@
 Forecast and baseline probabilistic prediction API for Meghvani Phase 3B.
 Provides endpoint for False Onset 7-Day prototype model inference and baseline metadata.
 """
-from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, status
+from typing import Dict, Any, Optional
+from fastapi import APIRouter, HTTPException, status, Query
 import logging
 
-from app.ml.model_loader import predict_block_false_onset, get_model_metadata
+from app.ml.model_loader import (
+    predict_block_false_onset,
+    get_model_metadata,
+    predict_block_multi_event,
+    get_multi_event_suite_summary
+)
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/forecast", tags=["Baseline Forecast (Phase 3B)"])
+router = APIRouter(prefix="/forecast", tags=["Baseline Forecast (Phase 3B & Multi-Event)"])
 
 
 def _normalize_block_id(block_id: str) -> str:
@@ -123,3 +128,53 @@ def get_false_onset_decision(block_id: str) -> Dict[str, Any]:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Decision evaluation error: {str(e)}"
         )
+
+
+@router.get("/suite-summary")
+def get_multi_event_suite_summary_endpoint() -> Dict[str, Any]:
+    """
+    Returns metadata, Brier scores, BSS, and calibration status across all
+    trained models in the multi-event prediction suite.
+    """
+    try:
+        return get_multi_event_suite_summary()
+    except Exception as e:
+        logger.error(f"Failed to fetch suite summary: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{block_id}/multi-event")
+def get_block_multi_event_prediction(
+    block_id: str,
+    horizon_days: int = Query(7, description="Forecast horizon in days (7 or 14)")
+) -> Dict[str, Any]:
+    """
+    Returns calibrated multi-event probabilities for a block:
+    - P(Monsoon Onset)
+    - P(Monsoon Break Spell)
+    - P(Heavy Rain Episode)
+    - P(False Onset Warning)
+    """
+    norm_id = _normalize_block_id(block_id)
+    try:
+        return predict_block_multi_event(norm_id, horizon_days=horizon_days)
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except FileNotFoundError as fe:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(fe)
+        )
+    except Exception as e:
+        logger.error(f"Multi-event prediction failed for block {norm_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Inference error: {str(e)}"
+        )
+

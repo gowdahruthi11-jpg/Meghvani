@@ -25,7 +25,9 @@ import {
   ObservationSummary,
   DemoRunResult,
   DemoStatusResult,
-  MultiYearValidationSummary
+  MultiYearValidationSummary,
+  MultiEventForecastResponse,
+  MultiEventSuiteSummary
 } from '../types';
 
 
@@ -242,6 +244,13 @@ export const api = {
 
   getFalseOnsetDecision: (blockId: string) =>
     request<DecisionSupportResult>(`/forecast/${blockId}/false-onset/decision`),
+
+  // Multi-Event Prediction Suite
+  getMultiEventForecast: (blockId: string, horizonDays = 7) =>
+    request<MultiEventForecastResponse>(`/forecast/${blockId}/multi-event?horizon_days=${horizonDays}`),
+
+  getMultiEventSuiteSummary: () =>
+    request<MultiEventSuiteSummary>('/forecast/suite-summary'),
 
   // Advisory Rule Framework (Phase 5A)
   getBlockAdvisory: (blockId: string, cropId = 'soybean', language = 'en') => {

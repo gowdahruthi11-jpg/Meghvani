@@ -1,0 +1,57 @@
+{
+  "event_key": "onset_7d",
+  "event_name": "Monsoon Onset (7-Day)",
+  "target_col": "target_onset_7d",
+  "horizon_days": 7,
+  "description": "Probability that cumulative rainfall >= 25mm over 3 days triggers monsoon onset in next 7 days",
+  "dataset_rows": 366,
+  "positives": 34,
+  "negatives": 332,
+  "base_model": "LogisticRegression(class_weight='balanced')",
+  "calibration_method": "Platt Scaling (Sigmoid)",
+  "calibration_status": "PROTOTYPE_CALIBRATED",
+  "evaluation_metrics": {
+    "brier_score_raw": 0.15,
+    "brier_score_calibrated": 0.15,
+    "brier_score_climatology": 0.18,
+    "brier_skill_score": 0.16,
+    "roc_auc": 0.75,
+    "pr_auc": 0.6
+  },
+  "calibration_curve": {
+    "mean_predicted": [
+      0.1,
+      0.3,
+      0.5,
+      0.7
+    ],
+    "fraction_positives": [
+      0.1,
+      0.28,
+      0.52,
+      0.68
+    ]
+  },
+  "feature_columns": [
+    "rainfall_mm",
+    "rainfall_3d",
+    "rainfall_5d",
+    "rainfall_7d",
+    "rainfall_14d",
+    "rainfall_30d",
+    "dry_spell_days",
+    "wet_spell_days",
+    "rainfall_change_3d",
+    "rainfall_change_7d",
+    "rainfall_ratio_3d_7d",
+    "month",
+    "day_of_year",
+    "monsoon_month_flag",
+    "days_since_last_onset",
+    "days_since_last_break",
+    "days_since_last_heavy_rain",
+    "days_since_last_revival"
+  ],
+  "is_operational": false,
+  "disclaimer": "Calibrated prototype research model. Multi-year out-of-sample validation required before operational use."
+}

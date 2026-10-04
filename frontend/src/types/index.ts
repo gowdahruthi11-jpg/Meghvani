@@ -741,4 +741,37 @@ export interface MultiYearValidationSummary {
   feedback_retraining: boolean;
 }
 
+export interface MultiEventForecastResponse {
+  block_id: string;
+  prediction_date: string;
+  horizon_days: number;
+  prob_onset: number;
+  prob_break: number;
+  prob_heavy_rain: number;
+  prob_false_onset: number;
+  confidence: number;
+  is_operational: boolean;
+  model_architecture: string;
+  events_evaluated: string[];
+  disclaimer: string;
+}
+
+export interface MultiEventSuiteSummary {
+  [eventKey: string]: {
+    name: string;
+    target: string;
+    horizon_days: number;
+    positives: number;
+    metrics: {
+      brier_score_raw: number;
+      brier_score_calibrated: number;
+      brier_score_climatology: number;
+      brier_skill_score: number;
+      roc_auc: number;
+      pr_auc: number;
+    };
+    status: string;
+  };
+}
+
 

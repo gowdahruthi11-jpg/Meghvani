@@ -232,3 +232,85 @@ def predict_block_false_onset(
         )
     }
 
+
+_CACHED_SUITE = None
+
+
+def get_multi_event_predictor() -> Any:
+    """Returns singleton instance of MultiEventPredictor."""
+    global _CACHED_SUITE
+    if _CACHED_SUITE is None:
+        from app.ml.multi_event_suite import MultiEventPredictor
+        _CACHED_SUITE = MultiEventPredictor(model_dir=MODEL_DIR)
+    return _CACHED_SUITE
+
+
+def get_multi_event_suite_summary() -> Dict[str, Any]:
+    """Returns the multi-event models summary JSON."""
+    summary_path = MODEL_DIR / "multi_event_suite_summary.json"
+    if summary_path.exists():
+        with open(summary_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {"status": "NOT_TRAINED", "message": "Multi-event suite has not been trained yet."}
+
+
+def predict_block_multi_event(
+    block_id: str,
+    horizon_days: int = 7,
+    df: Optional[pd.DataFrame] = None
+) -> Dict[str, Any]:
+    """
+    Generates multi-event probabilistic predictions for a block:
+    - P(Onset)
+    - P(Break)
+    - P(Heavy Rain)
+    - P(False Onset)
+    """
+    if df is None:
+        if not PREDICTION_DATASET_CSV.exists():
+            raise FileNotFoundError("Prediction dataset not found.")
+        df = pd.read_csv(PREDICTION_DATASET_CSV)
+
+    block_df = df[df["block_id"] == block_id].sort_values(by="prediction_date")
+    if block_df.empty:
+        raise ValueError(f"No records found for block '{block_id}'.")
+
+    latest_row = block_df.iloc[[-1]]
+    prediction_date = str(latest_row["prediction_date"].values[0])
+
+    suite = get_multi_event_predictor()
+
+    # Determine horizon keys
+    onset_key = "onset_14d" if horizon_days == 14 else "onset_7d"
+    break_key = "break_14d" if horizon_days == 14 else "break_7d"
+    heavy_rain_key = "heavy_rain_7d"
+    false_onset_key = "false_onset_7d"
+
+    prob_onset = suite.predict_event_probability(onset_key, latest_row)
+    prob_break = suite.predict_event_probability(break_key, latest_row)
+    prob_heavy_rain = suite.predict_event_probability(heavy_rain_key, latest_row)
+    prob_false_onset = suite.predict_event_probability(false_onset_key, latest_row)
+
+    # Compute composite confidence based on brier skill scores
+    summary = get_multi_event_suite_summary()
+    confidence = 0.85
+    if onset_key in summary:
+        bss = summary[onset_key].get("metrics", {}).get("brier_skill_score", 0.16)
+        confidence = max(0.60, min(0.95, 0.75 + float(bss) * 0.5))
+
+    return {
+        "block_id": block_id,
+        "prediction_date": prediction_date,
+        "horizon_days": horizon_days,
+        "prob_onset": round(float(prob_onset), 4),
+        "prob_break": round(float(prob_break), 4),
+        "prob_heavy_rain": round(float(prob_heavy_rain), 4),
+        "prob_false_onset": round(float(prob_false_onset), 4),
+        "confidence": round(float(confidence), 2),
+        "is_operational": False,
+        "model_architecture": "LogisticRegression + Platt Scaling Calibration",
+        "events_evaluated": [onset_key, break_key, heavy_rain_key, false_onset_key],
+        "disclaimer": "Calibrated agrometeorological prototype prediction suite. Multi-year out-of-sample validation required."
+    }
+
+
