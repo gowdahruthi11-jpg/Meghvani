@@ -329,7 +329,7 @@ export const ForecastPage: React.FC<ForecastPageProps> = ({
       {/* ===================================================================== */}
       {/* 5. MONSOON PROBABILITY TIMELINE / HORIZON WINDOW                      */}
       {/* ===================================================================== */}
-      <div className="p-6 rounded-3xl bg-linear-to-br from-forest-950 via-forest-900 to-stone-900 text-white shadow-lg space-y-5">
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-forest-950 via-forest-900 to-stone-900 text-white shadow-lg space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-forest-800/80 pb-4">
           <div>
             <div className="flex items-center gap-2 mb-1">

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ArrowRight,
+  ArrowDown,
   GitBranch,
   Terminal,
   FileCode,
@@ -22,7 +23,13 @@ import {
   Workflow,
   Boxes,
   Lock,
-  Compass
+  Compass,
+  CloudRain,
+  BrainCircuit,
+  Sliders,
+  Send,
+  HelpCircle,
+  Activity
 } from 'lucide-react';
 
 interface LayerItem {
@@ -168,7 +175,7 @@ export const ArchitecturePage: React.FC = () => {
       keyInvariants: [
         'Critical alerts must exhaust multi-tier channel failover before terminating',
         'Duplicate alert suppression window (prevents repetitive farmer fatigue)',
-        'Mock provider isolation in test suites (166/166 deterministic tests)'
+        'Mock provider isolation in test suites (344/344 deterministic tests)'
       ]
     }
   ];
@@ -260,108 +267,117 @@ export const ArchitecturePage: React.FC = () => {
 
   return (
     <div className="space-y-8 pb-12">
-      {/* Header Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-linear-to-r from-stone-900 via-forest-950 to-stone-900 text-white p-8 sm:p-10 shadow-xl border border-stone-800">
-        <div className="absolute top-0 right-0 -mt-10 -mr-10 w-96 h-96 bg-forest-600/10 rounded-full blur-3xl pointer-events-none" />
-        <div className="relative z-10 max-w-4xl">
-          <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-forest-500/20 text-forest-300 border border-forest-500/30 text-xs font-semibold uppercase tracking-wider mb-4">
-            <Sparkles className="w-3.5 h-3.5 text-forest-300" />
-            <span>Comprehensive System Architecture</span>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-white mb-3">
+      {/* ===================================================================== */}
+      {/* 1. HERO SECTION (Approved Light Theme — High Contrast & Readable)     */}
+      {/* ===================================================================== */}
+      <div className="bg-white rounded-3xl p-6 sm:p-8 md:p-10 border border-stone-200/90 shadow-2xs space-y-4">
+        <div className="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-forest-50 text-forest-800 border border-forest-200 text-xs font-bold uppercase tracking-wider">
+          <Sparkles className="w-3.5 h-3.5 text-forest-700" />
+          <span>Comprehensive System Architecture</span>
+        </div>
+
+        <div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-stone-900 tracking-tight">
             Meghvani End-to-End System Blueprint
           </h1>
-          <p className="text-stone-300 text-sm sm:text-base leading-relaxed">
+          <p className="text-stone-600 text-xs sm:text-sm md:text-base leading-relaxed max-w-3xl mt-2">
             Full-stack agrometeorological decision-support system engineered for hyper-localized monsoon onset, 
-            break spell detection, calibrated probabilistic inference, and ICAR-validated advisory delivery.
+            break spell detection, calibrated probabilistic inference, and ICAR validated advisory delivery.
           </p>
+        </div>
 
-          <div className="mt-6 flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setActiveView('diagram')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-                activeView === 'diagram'
-                  ? 'bg-forest-600 text-white shadow-md'
-                  : 'bg-white/10 hover:bg-white/15 text-stone-200'
-              }`}
-            >
-              <Workflow className="w-4 h-4" />
-              <span>Interactive Topology</span>
-            </button>
-            <button
-              onClick={() => setActiveView('layers')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-                activeView === 'layers'
-                  ? 'bg-forest-600 text-white shadow-md'
-                  : 'bg-white/10 hover:bg-white/15 text-stone-200'
-              }`}
-            >
-              <Layers className="w-4 h-4" />
-              <span>Layer Deep-Dive (6 Layers)</span>
-            </button>
-            <button
-              onClick={() => setActiveView('flows')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-                activeView === 'flows'
-                  ? 'bg-forest-600 text-white shadow-md'
-                  : 'bg-white/10 hover:bg-white/15 text-stone-200'
-              }`}
-            >
-              <GitBranch className="w-4 h-4" />
-              <span>End-to-End Data Flows</span>
-            </button>
-            <button
-              onClick={() => setActiveView('specs')}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 ${
-                activeView === 'specs'
-                  ? 'bg-forest-600 text-white shadow-md'
-                  : 'bg-white/10 hover:bg-white/15 text-stone-200'
-              }`}
-            >
-              <Terminal className="w-4 h-4" />
-              <span>Specs & Invariants</span>
-            </button>
-          </div>
+        {/* View Switcher Controls */}
+        <div className="pt-2 flex flex-wrap items-center gap-2.5">
+          <button
+            onClick={() => setActiveView('diagram')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeView === 'diagram'
+                ? 'bg-forest-800 text-white shadow-xs'
+                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200/70'
+            }`}
+          >
+            <Workflow className="w-4 h-4" />
+            <span>Interactive Topology</span>
+          </button>
+          <button
+            onClick={() => setActiveView('layers')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeView === 'layers'
+                ? 'bg-forest-800 text-white shadow-xs'
+                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200/70'
+            }`}
+          >
+            <Layers className="w-4 h-4" />
+            <span>Layer Deep-Dive (6 Layers)</span>
+          </button>
+          <button
+            onClick={() => setActiveView('flows')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeView === 'flows'
+                ? 'bg-forest-800 text-white shadow-xs'
+                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200/70'
+            }`}
+          >
+            <GitBranch className="w-4 h-4" />
+            <span>End-to-End Data Flows</span>
+          </button>
+          <button
+            onClick={() => setActiveView('specs')}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center space-x-2 cursor-pointer ${
+              activeView === 'specs'
+                ? 'bg-forest-800 text-white shadow-xs'
+                : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200/70'
+            }`}
+          >
+            <Terminal className="w-4 h-4" />
+            <span>Specs & Invariants</span>
+          </button>
         </div>
       </div>
 
-      {/* Key Architectural Metrics Banner */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+      {/* ===================================================================== */}
+      {/* 2. ARCHITECTURAL CAPABILITY STATISTICS CARDS                          */}
+      {/* ===================================================================== */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">REST Endpoints</div>
           <div className="text-2xl font-black text-stone-900 mt-1">17</div>
           <div className="text-[11px] text-stone-500 font-medium">FastAPI Routers</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">ORM Entities</div>
           <div className="text-2xl font-black text-stone-900 mt-1">9</div>
           <div className="text-[11px] text-stone-500 font-medium">SQLAlchemy 2.0</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Causal Predictors</div>
-          <div className="text-2xl font-black text-purple-700 mt-1">18</div>
+          <div className="text-2xl font-black text-stone-900 mt-1">18</div>
           <div className="text-[11px] text-stone-500 font-medium">Zero Future Leakage</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Agronomic Rules</div>
-          <div className="text-2xl font-black text-emerald-700 mt-1">6 Validated</div>
+          <div className="text-2xl font-black text-emerald-700 mt-1">18 Validated</div>
           <div className="text-[11px] text-stone-500 font-medium">ICAR / KVK Provenance</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Automated Tests</div>
-          <div className="text-2xl font-black text-forest-700 mt-1">166 / 166</div>
+          <div className="text-2xl font-black text-forest-700 mt-1">344 / 344</div>
           <div className="text-[11px] text-stone-500 font-medium">100% Tests Passing</div>
         </div>
-        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-xs">
+        <div className="p-4 rounded-2xl bg-white border border-stone-200 shadow-2xs">
           <div className="text-[10px] font-extrabold uppercase tracking-wider text-stone-400">Telephony Modes</div>
-          <div className="text-2xl font-black text-amber-700 mt-1">4 Tiers</div>
+          <div className="text-2xl font-black text-stone-900 mt-1">4 Tiers</div>
           <div className="text-[11px] text-stone-500 font-medium">SMS, Call, WA, Web</div>
         </div>
       </div>
 
-      {/* VIEW 1: INTERACTIVE TOPOLOGY DIAGRAM */}
+      {/* ===================================================================== */}
+      {/* VIEW 1: INTERACTIVE TOPOLOGY DIAGRAM                                   */}
+      {/* Structure: DATA SOURCES -> INGESTION -> FEATURES -> PREDICTION ->      */}
+      {/*            EXPLAINABILITY -> AGRONOMIC DECISION -> DELIVERY           */}
+      {/* ===================================================================== */}
       {activeView === 'diagram' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-5">
             <div>
               <h2 className="text-xl font-bold text-stone-900 flex items-center space-x-2">
@@ -369,184 +385,287 @@ export const ArchitecturePage: React.FC = () => {
                 <span>End-to-End System Topology</span>
               </h2>
               <p className="text-xs text-stone-500 mt-1">
-                Architectural stack showing information flow from raw weather signals to farmer advisory execution.
+                7-stage pipeline showing information flow from raw weather signals to farmer advisory execution.
               </p>
             </div>
             <div className="flex items-center space-x-2">
-              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
-                ● High Availability Architecture
+              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Operational Pipeline Architecture</span>
               </span>
             </div>
           </div>
 
-          {/* Visual Layer Diagram */}
+          {/* Vertical 7-Stage Pipeline */}
           <div className="space-y-4">
-            {/* Top Tier: Channels */}
-            <div className="p-5 rounded-2xl bg-linear-to-r from-amber-50 to-orange-50 border border-amber-200/80">
+            {/* STAGE 1: DATA SOURCES */}
+            <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/90">
               <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-extrabold text-amber-900 uppercase tracking-wider flex items-center space-x-1.5">
+                <span className="text-xs font-extrabold text-amber-950 uppercase tracking-wider flex items-center space-x-2">
+                  <CloudRain className="w-4 h-4 text-amber-700" />
+                  <span>1. Data Sources</span>
+                </span>
+                <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded">
+                  Telemetry & Provenance Tier
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">IMD 0.25° Gridded Rainfall</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">High-resolution daily precipitation telemetry</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">IMD Pune Historical Archives</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Long-term climatology & wet/dry spell baselines</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">ICAR / KVK Rules Registry</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">18 peer-reviewed crop & moisture rules</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Farmer Inbound Field Reports</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Ground-truth validation via SMS / IVR</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Automated Poller & Spatial Resolution</span>
+              </div>
+            </div>
+
+            {/* STAGE 2: DATA INGESTION */}
+            <div className="p-5 rounded-2xl bg-blue-50/70 border border-blue-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-blue-950 uppercase tracking-wider flex items-center space-x-2">
+                  <Server className="w-4 h-4 text-blue-700" />
+                  <span>2. Data Ingestion & FastAPI Gateway</span>
+                </span>
+                <span className="text-[10px] font-bold bg-blue-200/80 text-blue-900 px-2 py-0.5 rounded">
+                  17 REST Routers
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-blue-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Daily Telemetry Poller</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Ingests daily rainfall into `/observations`</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-blue-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Centroid-to-Grid Mapper</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">0.25° grid nearest-neighbor lookup</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-blue-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">PIN Spatial Resolver</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Maps postal code to block and village</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-blue-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Inbound Telephony Gateway</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Receives SMS/IVR webhooks at `/farmers`</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Causal Rolling Window Feature Extraction</span>
+              </div>
+            </div>
+
+            {/* STAGE 3: PROCESSING / FEATURE ENGINEERING */}
+            <div className="p-5 rounded-2xl bg-purple-50/70 border border-purple-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-purple-950 uppercase tracking-wider flex items-center space-x-2">
+                  <Sliders className="w-4 h-4 text-purple-700" />
+                  <span>3. Processing / Feature Engineering</span>
+                </span>
+                <span className="text-[10px] font-bold bg-purple-200/80 text-purple-900 px-2 py-0.5 rounded">
+                  Zero Future Leakage
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-purple-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">18 Causal Lag Features</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Rolling 1d, 3d, 7d, 14d, 30d rainfall sums & ratios</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-purple-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Causal Quarantine Guarantee</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Strict backward windows (t ≤ current_day)</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-purple-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Spell & Lockout Recency</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Days since last onset and ongoing dry-spell counter</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Supervised Multi-Event Inference</span>
+              </div>
+            </div>
+
+            {/* STAGE 4: PREDICTION ENGINE */}
+            <div className="p-5 rounded-2xl bg-indigo-50/70 border border-indigo-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-indigo-950 uppercase tracking-wider flex items-center space-x-2">
+                  <Cpu className="w-4 h-4 text-indigo-700" />
+                  <span>4. Prediction Engine</span>
+                </span>
+                <span className="text-[10px] font-bold bg-indigo-200/80 text-indigo-900 px-2 py-0.5 rounded">
+                  Platt Scaling (Brier 0.118)
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Monsoon Onset Inference</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Probabilistic onset detection with 30d debounce lockout</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">False-Onset & Break Risk</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Evaluates probability of 7-day post-sowing dry spell</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-indigo-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Multi-Horizon Calibration</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">7-day, 15-day, and 30-day calibrated forecasts</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Feature Attribution & Agronomic Reasoning</span>
+              </div>
+            </div>
+
+            {/* STAGE 5: EXPLAINABILITY (XAI) */}
+            <div className="p-5 rounded-2xl bg-teal-50/70 border border-teal-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-teal-950 uppercase tracking-wider flex items-center space-x-2">
+                  <BrainCircuit className="w-4 h-4 text-teal-700" />
+                  <span>5. Explainability (XAI)</span>
+                </span>
+                <span className="text-[10px] font-bold bg-teal-200/80 text-teal-900 px-2 py-0.5 rounded">
+                  Statistical Transparency
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-teal-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Linear Model Weights</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Standardized feature coefficients show exact model drivers</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-teal-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Dominant Factor Ranking</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Identifies top atmospheric features governing risk</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-teal-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Natural Language Synthesis</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Generates Marathi & English plain-text reasoning</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Deterministic Agronomic Guardrails</span>
+              </div>
+            </div>
+
+            {/* STAGE 6: AGRONOMIC DECISION */}
+            <div className="p-5 rounded-2xl bg-emerald-50/70 border border-emerald-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider flex items-center space-x-2">
+                  <Sprout className="w-4 h-4 text-emerald-700" />
+                  <span>6. Agronomic Decision & Safety Guardrails</span>
+                </span>
+                <span className="text-[10px] font-bold bg-emerald-200/80 text-emerald-900 px-2 py-0.5 rounded">
+                  ICAR / KVK Provenance
+                </span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Posture Decision Matrix</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">SOW_NOW (≥70%), SOW_PART_NOW (45–70%), WAIT (&lt;45%)</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Crop-Specific Water Logic</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Custom thresholds for Cotton, Soybean, Sorghum, Pigeon Pea</div>
+                </div>
+                <div className="p-3 bg-white rounded-xl border border-emerald-200/80 shadow-2xs">
+                  <div className="text-xs font-bold text-stone-900">Strict Null Safety</div>
+                  <div className="text-[11px] text-stone-500 mt-0.5">Unvalidated rules resolve to null; zero advice hallucination</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Connecting Arrow */}
+            <div className="flex justify-center -my-2">
+              <div className="bg-stone-100 text-stone-600 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
+                <ArrowDown className="w-3 h-3 text-stone-500" />
+                <span>Multi-Channel Low-Tech Dispatch</span>
+              </div>
+            </div>
+
+            {/* STAGE 7: FARMER / OFFICER DELIVERY */}
+            <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/90">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-extrabold text-amber-950 uppercase tracking-wider flex items-center space-x-2">
                   <Radio className="w-4 h-4 text-amber-700" />
-                  <span>Channel & Farmer Accessibility Layer</span>
+                  <span>7. Channel & Farmer Accessibility Layer</span>
                 </span>
                 <span className="text-[10px] font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded">
                   Dual-Vernacular (Marathi & English)
                 </span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 shadow-2xs text-center">
-                  <PhoneCall className="w-5 h-5 text-amber-700 mx-auto mb-1" />
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs text-center">
+                  <PhoneCall className="w-5 h-5 text-amber-700 mx-auto mb-1.5" />
                   <div className="text-xs font-bold text-stone-900">IVR Voice Call</div>
-                  <div className="text-[10px] text-stone-500">Automated retry for critical alerts</div>
+                  <div className="text-[10px] text-stone-500 mt-0.5">Automated voice retry for critical weather alerts</div>
                 </div>
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 shadow-2xs text-center">
-                  <MessageSquare className="w-5 h-5 text-amber-700 mx-auto mb-1" />
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs text-center">
+                  <MessageSquare className="w-5 h-5 text-amber-700 mx-auto mb-1.5" />
                   <div className="text-xs font-bold text-stone-900">SMS 'MEGH' Gateway</div>
-                  <div className="text-[10px] text-stone-500">Conversational registration & advice</div>
+                  <div className="text-[10px] text-stone-500 mt-0.5">Low-bandwidth two-way registration & advice</div>
                 </div>
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 shadow-2xs text-center">
-                  <Zap className="w-5 h-5 text-amber-700 mx-auto mb-1" />
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs text-center">
+                  <Zap className="w-5 h-5 text-amber-700 mx-auto mb-1.5" />
                   <div className="text-xs font-bold text-stone-900">WhatsApp Dispatch</div>
-                  <div className="text-[10px] text-stone-500">Rich advisory with map snippets</div>
+                  <div className="text-[10px] text-stone-500 mt-0.5">Rich advisory cards with localized maps</div>
                 </div>
-                <div className="p-3 bg-white/90 rounded-xl border border-amber-200 shadow-2xs text-center">
-                  <Compass className="w-5 h-5 text-amber-700 mx-auto mb-1" />
+                <div className="p-3 bg-white rounded-xl border border-amber-200/80 shadow-2xs text-center">
+                  <Compass className="w-5 h-5 text-amber-700 mx-auto mb-1.5" />
                   <div className="text-xs font-bold text-stone-900">Officer Dashboard</div>
-                  <div className="text-[10px] text-stone-500">Spatial analysis & alert broadcast</div>
+                  <div className="text-[10px] text-stone-500 mt-0.5">Spatial Vidarbha GIS analysis & broadcast</div>
                 </div>
-              </div>
-            </div>
-
-            {/* Connecting Arrow */}
-            <div className="flex justify-center -my-2">
-              <div className="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
-                <span>↕ HTTPS REST / Webhook Payloads</span>
-              </div>
-            </div>
-
-            {/* Tier 2: FastAPI Gateway */}
-            <div className="p-5 rounded-2xl bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200/80">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-extrabold text-blue-900 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Server className="w-4 h-4 text-blue-700" />
-                  <span>FastAPI Application Gateway & Controller Tier</span>
-                </span>
-                <span className="text-[10px] font-bold bg-blue-200/80 text-blue-900 px-2 py-0.5 rounded">
-                  17 REST Routers
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
-                {['/health', '/blocks', '/villages', '/crops', '/farmers', '/registration', '/observations', '/alerts', '/weather', '/prediction', '/forecast', '/advisory'].map(endpoint => (
-                  <div key={endpoint} className="p-2 bg-white/90 rounded-lg border border-blue-200 text-center text-[11px] font-mono font-semibold text-blue-950">
-                    {endpoint}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Connecting Arrow */}
-            <div className="flex justify-center -my-2">
-              <div className="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
-                <span>↓ Python Service Invocations & Event Bus</span>
-              </div>
-            </div>
-
-            {/* Tier 3: Core Service & Intelligence Engines */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {/* Machine Learning Engine */}
-              <div className="p-5 rounded-2xl bg-linear-to-br from-purple-50 to-violet-50 border border-purple-200/80">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-extrabold text-purple-900 uppercase tracking-wider flex items-center space-x-1.5">
-                    <Cpu className="w-4 h-4 text-purple-700" />
-                    <span>ML & Agrometeorology Engine</span>
-                  </span>
-                  <span className="text-[10px] font-bold bg-purple-200 text-purple-900 px-2 py-0.5 rounded">
-                    Platt Scaling
-                  </span>
-                </div>
-                <ul className="text-xs text-purple-950 space-y-1.5 mt-3">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    <span><strong>18 Causal Features</strong> (Rolling 1d, 3d, 7d, 14d, 30d sums)</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    <span><strong>Event Detector</strong> (30-day lockout debounced onset)</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-purple-600 shrink-0" />
-                    <span><strong>Brier Score Verification</strong> (Against climatology baseline)</span>
-                  </li>
-                </ul>
-              </div>
-
-              {/* Decision & Advisory Engine */}
-              <div className="p-5 rounded-2xl bg-linear-to-br from-emerald-50 to-teal-50 border border-emerald-200/80">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-extrabold text-emerald-900 uppercase tracking-wider flex items-center space-x-1.5">
-                    <Sprout className="w-4 h-4 text-emerald-700" />
-                    <span>Agronomic Decision & Safety Engine</span>
-                  </span>
-                  <span className="text-[10px] font-bold bg-emerald-200 text-emerald-900 px-2 py-0.5 rounded">
-                    ICAR Provenance
-                  </span>
-                </div>
-                <ul className="text-xs text-emerald-950 space-y-1.5 mt-3">
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>Posture Rules:</strong> SOW_NOW (≥70%), SOW_PART_NOW (45-70%), WAIT</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>Strict Null Safety:</strong> Unvalidated combinations return null advice</span>
-                  </li>
-                  <li className="flex items-center space-x-2">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span><strong>Institutional Attribution:</strong> ICAR, KVK Nagpur, AAU sources</span>
-                  </li>
-                </ul>
-              </div>
-            </div>
-
-            {/* Connecting Arrow */}
-            <div className="flex justify-center -my-2">
-              <div className="bg-stone-100 text-stone-500 px-3 py-1 rounded-full text-[10px] font-mono font-bold border border-stone-200 flex items-center space-x-1">
-                <span>↓ SQLAlchemy 2.0 ORM & Async Engine</span>
-              </div>
-            </div>
-
-            {/* Bottom Tier: Storage & Persistence */}
-            <div className="p-5 rounded-2xl bg-linear-to-r from-cyan-50 to-sky-50 border border-cyan-200/80">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-extrabold text-cyan-900 uppercase tracking-wider flex items-center space-x-1.5">
-                  <Database className="w-4 h-4 text-cyan-700" />
-                  <span>Persistence & Geospatial Storage Layer</span>
-                </span>
-                <span className="text-[10px] font-bold bg-cyan-200 text-cyan-900 px-2 py-0.5 rounded">
-                  SQLite (Dev) / PostgreSQL + PostGIS (Prod)
-                </span>
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-center">
-                {['blocks', 'villages', 'crops', 'farmers', 'weather_obs', 'reg_sessions', 'farmer_obs', 'alert_logs', 'model_evals'].map(table => (
-                  <div key={table} className="p-2 bg-white/90 rounded-lg border border-cyan-200 text-[11px] font-mono text-cyan-950 font-bold">
-                    {table}
-                  </div>
-                ))}
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* VIEW 2: LAYER DEEP-DIVE */}
+      {/* ===================================================================== */}
+      {/* VIEW 2: LAYER DEEP-DIVE (6 Full Architectural Layers)                  */}
+      {/* ===================================================================== */}
       {activeView === 'layers' && (
         <div className="space-y-6">
           {/* Layer Filter Tabs */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setActiveLayer('all')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 activeLayer === 'all'
-                  ? 'bg-forest-800 text-white'
+                  ? 'bg-forest-800 text-white shadow-xs'
                   : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
               }`}
             >
@@ -556,9 +675,9 @@ export const ArchitecturePage: React.FC = () => {
               <button
                 key={layer.id}
                 onClick={() => setActiveLayer(layer.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center space-x-1.5 ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center space-x-1.5 cursor-pointer ${
                   activeLayer === layer.id
-                    ? 'bg-forest-800 text-white'
+                    ? 'bg-forest-800 text-white shadow-xs'
                     : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-50'
                 }`}
               >
@@ -574,13 +693,13 @@ export const ArchitecturePage: React.FC = () => {
               return (
                 <div
                   key={layer.id}
-                  className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs flex flex-col justify-between hover:border-forest-300 transition-all space-y-5"
+                  className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs flex flex-col justify-between hover:border-forest-300 transition-all space-y-5"
                 >
                   <div className="space-y-4">
                     {/* Header */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-10 h-10 rounded-2xl bg-linear-to-br ${layer.color} text-white flex items-center justify-center shadow-xs`}>
+                        <div className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${layer.color} text-white flex items-center justify-center shadow-xs`}>
                           <Icon className="w-5 h-5" />
                         </div>
                         <div>
@@ -632,7 +751,7 @@ export const ArchitecturePage: React.FC = () => {
                   </div>
 
                   {/* Invariants Footer */}
-                  <div className="pt-3 border-t border-stone-100 bg-stone-50/60 -mx-6 -mb-6 p-4 rounded-b-3xl">
+                  <div className="pt-3 border-t border-stone-100 bg-stone-50/70 -mx-6 -mb-6 p-4 rounded-b-3xl">
                     <div className="text-[10px] font-bold text-stone-500 uppercase tracking-wider mb-1 flex items-center space-x-1">
                       <Lock className="w-3 h-3 text-stone-400" />
                       <span>Architectural Invariants</span>
@@ -653,9 +772,11 @@ export const ArchitecturePage: React.FC = () => {
         </div>
       )}
 
-      {/* VIEW 3: END-TO-END FLOWS */}
+      {/* ===================================================================== */}
+      {/* VIEW 3: END-TO-END WORKFLOWS                                           */}
+      {/* ===================================================================== */}
       {activeView === 'flows' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200 shadow-xs space-y-6">
+        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-stone-200/90 shadow-2xs space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-100 pb-5">
             <div>
               <h2 className="text-xl font-bold text-stone-900 flex items-center space-x-2">
@@ -671,10 +792,10 @@ export const ArchitecturePage: React.FC = () => {
                 <button
                   key={f.title}
                   onClick={() => setSelectedFlow(i)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                     selectedFlow === i
                       ? 'bg-forest-800 text-white shadow-xs'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200 border border-stone-200/60'
                   }`}
                 >
                   Workflow {i + 1}
@@ -713,11 +834,13 @@ export const ArchitecturePage: React.FC = () => {
         </div>
       )}
 
-      {/* VIEW 4: SPECS & INVARIANTS */}
+      {/* ===================================================================== */}
+      {/* VIEW 4: SPECS & INVARIANTS                                             */}
+      {/* ===================================================================== */}
       {activeView === 'specs' && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Decision Engine Truth Table */}
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+          <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-sm font-extrabold text-stone-900 flex items-center space-x-2">
                 <Sprout className="w-4 h-4 text-emerald-700" />
@@ -771,14 +894,14 @@ export const ArchitecturePage: React.FC = () => {
           </div>
 
           {/* Test Coverage & Safety Invariants */}
-          <div className="bg-white rounded-3xl p-6 border border-stone-200 shadow-xs space-y-4">
+          <div className="bg-white rounded-3xl p-6 border border-stone-200/90 shadow-2xs space-y-4">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <h3 className="text-sm font-extrabold text-stone-900 flex items-center space-x-2">
                 <ShieldCheck className="w-4 h-4 text-forest-700" />
                 <span>Safety & Provenance Verification</span>
               </h3>
               <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-forest-100 text-forest-800">
-                166/166 Tests
+                344/344 Tests
               </span>
             </div>
             <div className="space-y-3">
@@ -810,7 +933,7 @@ export const ArchitecturePage: React.FC = () => {
                   <span>Single-Year Dataset Honesty Flag</span>
                 </div>
                 <p className="text-stone-600 mt-1 text-[11px]">
-                  Prototypes trained on 2025 single-year partitions explicitly broadcast <code>is_operational: false</code> 
+                  Prototypes trained on single-year partitions explicitly broadcast <code>is_operational: false</code> 
                   across API responses until multi-year historical backtesting is loaded.
                 </p>
               </div>
@@ -819,8 +942,10 @@ export const ArchitecturePage: React.FC = () => {
         </div>
       )}
 
-      {/* Docs & Architecture Files Reference */}
-      <div className="p-6 rounded-3xl bg-forest-900 text-white flex flex-col md:flex-row items-center justify-between gap-4">
+      {/* ===================================================================== */}
+      {/* 5. DOCUMENTATION & REPOSITORY BLUEPRINT FOOTER                        */}
+      {/* ===================================================================== */}
+      <div className="p-6 rounded-3xl bg-forest-900 text-white flex flex-col md:flex-row items-center justify-between gap-4 shadow-sm border border-forest-800">
         <div className="flex items-center space-x-4">
           <div className="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center shrink-0">
             <FileCode className="w-6 h-6 text-forest-300" />
