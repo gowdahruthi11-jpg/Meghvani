@@ -153,10 +153,10 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
 
       {/* Main Two-Column Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* LEFT: Interactive GIS Map */}
+        {/* LEFT: Interactive GIS Map Preview */}
         <div className="lg:col-span-7 space-y-4">
           <div className="bg-white p-4 rounded-2xl border border-stone-200/90 shadow-2xs">
-            <div className="flex items-center justify-between pb-3 mb-2 border-b border-stone-100">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-stone-100">
               <div className="flex items-center space-x-2">
                 <Layers className="w-4 h-4 text-forest-700" />
                 <h3 className="font-extrabold text-sm text-stone-900">
@@ -166,6 +166,7 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               <button
                 onClick={() => onNavigateTab('map')}
                 className="text-[11px] text-forest-700 hover:text-forest-900 font-bold flex items-center gap-1 cursor-pointer"
+                title="Open Full GIS Workspace"
               >
                 <span>Full Map →</span>
               </button>
@@ -175,6 +176,8 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
               blocks={blocks}
               selectedBlockId={selectedBlock.blockId || propBlockId}
               onSelectBlock={handleSelectBlock}
+              mode="preview"
+              onNavigateFullMap={() => onNavigateTab('map')}
               onNavigateForecast={(id) => {
                 handleSelectBlock(id);
                 onNavigateTab('forecast');

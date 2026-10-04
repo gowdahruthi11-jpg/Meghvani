@@ -89,20 +89,21 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
         </div>
       </div>
 
-      {/* Two Column Layout: Expansive GIS Map (71%) & Selected-Region Telemetry Panel (29%) */}
+      {/* Two Column Layout: Expansive GIS Map (73%) & Region Telemetry Panel (27%) */}
       <div className="flex flex-col lg:flex-row gap-5 items-start">
-        {/* LEFT: GIS Map (approx 71% on desktop - Hero Focus) */}
-        <div className="w-full lg:w-[71%] bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-2xs">
+        {/* LEFT: GIS Map (approx 73% on desktop - Hero Focus) */}
+        <div className="w-full lg:w-[73%] bg-white p-4 sm:p-5 rounded-2xl border border-stone-200/90 shadow-2xs">
           <InteractiveWeatherMap
             blocks={blocks}
             selectedBlockId={selectedBlock.id}
             onSelectBlock={handleSelectBlock}
+            mode="full"
             onNavigateForecast={(id) => handleNavigate('forecast', id)}
           />
         </div>
 
-        {/* RIGHT: Selected Region Telemetry Information Panel (approx 29% on desktop) */}
-        <div className="w-full lg:w-[29%] space-y-4">
+        {/* RIGHT: Selected Region Telemetry Information Panel (approx 27% on desktop) */}
+        <div className="w-full lg:w-[27%] space-y-4">
           <div className="bg-white p-5 sm:p-6 rounded-2xl border border-stone-200/90 shadow-2xs space-y-5">
             <div className="pb-3 border-b border-stone-100">
               <span className="text-[10px] font-extrabold uppercase tracking-wider text-forest-700 block">
@@ -176,7 +177,7 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
             {/* Quick Actions */}
             <div className="pt-2 space-y-2 font-gis">
               <button
-                onClick={() => handleNavigate('advisories')}
+                onClick={() => handleNavigate('advisories', selectedBlock.id)}
                 className="w-full py-2.5 px-4 rounded-xl bg-forest-800 hover:bg-forest-900 text-white font-bold text-xs transition-all flex items-center justify-center space-x-1.5 shadow-xs cursor-pointer"
               >
                 <Sprout className="w-4 h-4" />
@@ -184,8 +185,15 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
               </button>
 
               <button
-                onClick={() => handleNavigate('prediction')}
-                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer"
+                onClick={() => handleNavigate('forecast', selectedBlock.id)}
+                className="w-full py-2.5 px-4 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-800 font-bold text-xs transition-all flex items-center justify-center space-x-1.5 cursor-pointer border border-stone-200"
+              >
+                <span>View Detailed Forecast →</span>
+              </button>
+
+              <button
+                onClick={() => handleNavigate('prediction', selectedBlock.id)}
+                className="w-full py-2 px-4 rounded-xl text-stone-600 hover:text-stone-900 font-semibold text-xs transition-all flex items-center justify-center space-x-1 cursor-pointer"
               >
                 <span>Run Detailed ML Prediction →</span>
               </button>
