@@ -16,6 +16,7 @@ import {
 import { api } from '../services/api';
 import { Block, WeatherObservation, DecisionSupportResult, FalseOnsetForecastResponse } from '../types';
 import { InteractiveWeatherMap } from '../components/InteractiveWeatherMap';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 
 interface LiveMapPageProps {
@@ -81,19 +82,9 @@ export const LiveMapPage: React.FC<LiveMapPageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-stone-500 font-semibold">Active Block:</span>
-            <select
-              value={selectedBlock.id}
-              onChange={(e) => handleSelectBlock(Number(e.target.value))}
-              className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 font-bold text-stone-900"
-            >
-              {blocks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center space-x-2">
+            <span className="text-stone-500 font-semibold text-xs">Hierarchy:</span>
+            <LocationHierarchySelector />
           </div>
         </div>
       </div>

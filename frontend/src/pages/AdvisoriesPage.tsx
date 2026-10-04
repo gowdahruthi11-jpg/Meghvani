@@ -16,6 +16,7 @@ import {
 import { api } from '../services/api';
 import { Block, AdvisoryResult, DecisionSupportResult, WeatherObservation } from '../types';
 import { FarmerMessageCard } from '../components/FarmerMessageCard';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 
 interface AdvisoriesPageProps {
@@ -92,19 +93,9 @@ export const AdvisoriesPage: React.FC<AdvisoriesPageProps> = ({
 
         {/* Location & Crop Selector Tabs */}
         <div className="flex flex-wrap items-center gap-3">
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-stone-500 font-semibold">Active Block:</span>
-            <select
-              value={selectedBlock.id}
-              onChange={(e) => handleSelectBlock(Number(e.target.value))}
-              className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 font-bold text-stone-900"
-            >
-              {blocks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center space-x-2">
+            <span className="text-stone-500 font-semibold text-xs hidden sm:inline">Hierarchy:</span>
+            <LocationHierarchySelector />
           </div>
 
           <div className="flex items-center space-x-1.5 bg-stone-100 p-1 rounded-xl border border-stone-200 text-xs font-semibold self-start sm:self-auto">

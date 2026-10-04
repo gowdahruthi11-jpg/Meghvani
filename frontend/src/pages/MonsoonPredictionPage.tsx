@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
 import { Block } from '../types';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 
 interface MonsoonPredictionPageProps {
   blocks: Block[];
@@ -59,7 +60,7 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
   return (
     <div className="space-y-6 pb-12">
       {/* Page Header */}
-      <div className="bg-white p-6 rounded-2xl border border-stone-200/90 shadow-2xs">
+      <div className="bg-white p-6 rounded-2xl border border-stone-200/90 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center space-x-2.5">
           <div className="w-10 h-10 rounded-xl bg-forest-50 border border-forest-200 flex items-center justify-center text-forest-800 text-lg">
             <CloudRain className="w-5 h-5" />
@@ -72,6 +73,14 @@ export const MonsoonPredictionPage: React.FC<MonsoonPredictionPageProps> = ({
               Supervised machine learning inference for monsoon onset, dry-spell breaks, and soil moisture transitions.
             </p>
           </div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[10px] font-bold text-amber-900">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>Prototype coverage: 3 regions</span>
+          </div>
+          <LocationHierarchySelector />
         </div>
       </div>
 

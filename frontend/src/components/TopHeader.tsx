@@ -9,6 +9,7 @@ import {
   ChevronDown
 } from 'lucide-react';
 import { PredictionJourney } from './PredictionJourney';
+import { LocationHierarchySelector } from './LocationHierarchySelector';
 import { Block } from '../types';
 
 interface TopHeaderProps {
@@ -74,24 +75,8 @@ export const TopHeader: React.FC<TopHeaderProps> = ({
 
       {/* Right: Location Selector, Alerts & Date */}
       <div className="flex items-center space-x-2 sm:space-x-3">
-        {/* Compact Location Selector */}
-        <div className="flex items-center bg-stone-50 border border-stone-200 rounded-xl px-2.5 py-1.5 text-xs shadow-2xs">
-          <MapPin className="w-3.5 h-3.5 text-forest-700 mr-1.5 shrink-0" />
-          <span className="text-stone-500 font-semibold hidden md:inline mr-1">
-            Maharashtra &gt;
-          </span>
-          <select
-            value={selectedBlockId}
-            onChange={(e) => onSelectBlockId(Number(e.target.value))}
-            className="bg-transparent font-bold text-stone-900 focus:outline-none cursor-pointer text-xs"
-          >
-            {blocks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* Hierarchical Location Selector: State -> District -> Block -> Village */}
+        <LocationHierarchySelector />
 
         {/* Date Display */}
         <div className="hidden lg:flex items-center text-[11px] font-semibold text-stone-500 bg-stone-50 px-2.5 py-1.5 rounded-xl border border-stone-200">

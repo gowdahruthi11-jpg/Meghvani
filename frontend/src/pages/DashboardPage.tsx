@@ -30,6 +30,7 @@ import {
 import { MetricCard } from '../components/MetricCard';
 import { InteractiveWeatherMap } from '../components/InteractiveWeatherMap';
 import { RecentRainfallChart } from '../components/RecentRainfallChart';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 
 interface DashboardPageProps {
   selectedBlockId: number;
@@ -86,35 +87,13 @@ export const DashboardPage: React.FC<DashboardPageProps> = ({
           </p>
         </div>
 
-        {/* State -> District -> Block Selectors */}
+        {/* Hierarchical Location Selector & Prototype Coverage Badge */}
         <div className="flex flex-wrap items-center gap-2">
-          {/* State */}
-          <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-700 font-semibold shadow-2xs">
-            <span className="text-stone-400 text-[10px] block">State</span>
-            <span>Maharashtra</span>
+          <div className="hidden sm:flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200/80 text-[10px] font-bold text-amber-900">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+            <span>Prototype coverage: 3 regions</span>
           </div>
-
-          {/* District */}
-          <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-700 font-semibold shadow-2xs">
-            <span className="text-stone-400 text-[10px] block">District</span>
-            <span>{selectedBlock.district}</span>
-          </div>
-
-          {/* Block Dropdown */}
-          <div className="bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs shadow-2xs">
-            <span className="text-stone-400 text-[10px] block font-semibold">Block / Taluka</span>
-            <select
-              value={selectedBlock.blockId || propBlockId}
-              onChange={(e) => handleSelectBlock(Number(e.target.value))}
-              className="bg-transparent font-bold text-stone-900 focus:outline-none cursor-pointer"
-            >
-              {blocks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <LocationHierarchySelector />
         </div>
       </div>
 

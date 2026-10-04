@@ -18,6 +18,7 @@ import {
   Info
 } from 'lucide-react';
 import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 import { Block } from '../types';
 
 interface ForecastPageProps {
@@ -97,22 +98,9 @@ export const ForecastPage: React.FC<ForecastPageProps> = ({
         </div>
 
         {/* Global Region Switcher Dropdown */}
-        <div className="flex items-center gap-2 self-start md:self-auto bg-stone-50 border border-stone-200 p-2 rounded-xl">
-          <span className="text-xs font-bold text-stone-600 flex items-center gap-1">
-            <MapPin className="w-3.5 h-3.5 text-forest-700" />
-            <span>Region:</span>
-          </span>
-          <select
-            value={canonical.blockId || selectedBlockId}
-            onChange={(e) => handleSelectBlock(Number(e.target.value))}
-            className="bg-white border border-stone-300 rounded-lg px-2.5 py-1 text-xs font-bold text-stone-900 focus:outline-none focus:ring-2 focus:ring-forest-600/30 cursor-pointer"
-          >
-            {blocks.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 self-start md:self-auto">
+          <span className="text-xs font-bold text-stone-500 hidden sm:inline">Hierarchy:</span>
+          <LocationHierarchySelector />
         </div>
       </div>
 

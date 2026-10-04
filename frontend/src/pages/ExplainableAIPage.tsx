@@ -16,6 +16,7 @@ import {
 import { api } from '../services/api';
 import { BaselineModelMetadata, FeatureContribution, Block } from '../types';
 import { useCanonicalPrediction } from '../context/CanonicalPredictionContext';
+import { LocationHierarchySelector } from '../components/LocationHierarchySelector';
 
 interface ExplainableAIPageProps {
   blocks: Block[];
@@ -168,19 +169,12 @@ export const ExplainableAIPage: React.FC<ExplainableAIPageProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center space-x-2 text-xs">
-            <span className="text-stone-500 font-semibold">Active Block:</span>
-            <select
-              value={selectedBlock.id}
-              onChange={(e) => handleSelectBlock(Number(e.target.value))}
-              className="bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 font-bold text-stone-900"
-            >
-              {blocks.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center space-x-2">
+            <div className="hidden sm:flex items-center space-x-1.5 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-200/80 text-[10px] font-bold text-amber-900">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>
+              <span>Prototype coverage: 3 regions</span>
+            </div>
+            <LocationHierarchySelector />
           </div>
         </div>
       </div>

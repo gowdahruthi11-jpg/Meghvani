@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { api } from '../services/api';
 import {
   Block,
+  Village,
   WeatherObservation,
   DecisionSupportResult,
   FalseOnsetForecastResponse,
@@ -15,6 +16,7 @@ export interface CanonicalPrediction {
   blockName: string;
   district: string;
   state: string;
+  villageName?: string;
   predictionTimestamp: string;
   forecastHorizon: 7 | 15 | 30;
   
@@ -56,11 +58,19 @@ export interface CanonicalPrediction {
 }
 
 interface CanonicalContextType {
-  // Global Location
+  // Global Hierarchical Location
+  selectedState: string;
+  districts: string[];
+  selectedDistrict: string;
   selectedBlockId: number;
   selectedBlock: Block;
   blocks: Block[];
+  villages: Village[];
+  selectedVillageId: number | null;
+  selectedVillage: Village | null;
   setSelectedBlockId: (id: number) => void;
+  setSelectedVillageId: (id: number | null) => void;
+  selectLocationHierarchy: (district: string, blockId: number, villageId?: number | null) => void;
   
   // Global Horizon
   forecastHorizon: 7 | 15 | 30;
@@ -116,8 +126,10 @@ export const CanonicalPredictionProvider: React.FC<{
   onNavigateTab?: (tab: string) => void;
 }> = ({ children, selectedBlockId: propBlockId, onSelectBlockId: propSetBlockId, onNavigateTab }) => {
   const [blocks, setBlocks] = useState<Block[]>(DEFAULT_BLOCKS);
+  const [villages, setVillages] = useState<Village[]>([]);
   const [internalBlockId, setInternalBlockId] = useState<number>(propBlockId || 1);
   const selectedBlockId = propBlockId !== undefined ? propBlockId : internalBlockId;
+  const [selectedVillageId, setSelectedVillageId] = useState<number | null>(null);
   const [forecastHorizon, setForecastHorizon] = useState<7 | 15 | 30>(15);
   
   const [weatherObs, setWeatherObs] = useState<WeatherObservation[]>([]);
@@ -139,30 +151,64 @@ export const CanonicalPredictionProvider: React.FC<{
     return blocks.find(b => b.id === selectedBlockId) || blocks[0] || DEFAULT_BLOCKS[0];
   }, [blocks, selectedBlockId]);
 
+  // Districts dynamically derived from real backend blocks
+  const districts = useMemo(() => {
+    const set = new Set<string>();
+    blocks.forEach(b => {
+      if (b.district) set.add(b.district);
+    });
+    return Array.from(set);
+  }, [blocks]);
+
+  const selectedDistrict = selectedBlock.district || 'Nagpur';
+  const selectedState = selectedBlock.state || 'Maharashtra';
+
+  // Selected village lookup
+  const selectedVillage = useMemo(() => {
+    if (!selectedVillageId) return null;
+    return villages.find(v => v.id === selectedVillageId && v.block_id === selectedBlock.id) || null;
+  }, [villages, selectedVillageId, selectedBlock.id]);
+
   const blockCode = useMemo(() => {
     return selectedBlock.id === 1 ? 'BLK001' : selectedBlock.id === 2 ? 'BLK002' : 'BLK003';
   }, [selectedBlock.id]);
 
-  // Load canonical blocks on mount
+  // Load canonical blocks and villages on mount from real backend
   useEffect(() => {
-    const loadBlocks = async () => {
+    const loadLocations = async () => {
       try {
-        const data = await api.getBlocks();
-        if (data && data.length > 0) {
-          setBlocks(data);
+        const [blocksData, villagesData] = await Promise.all([
+          api.getBlocks().catch(() => []),
+          api.getVillages().catch(() => []),
+        ]);
+        if (blocksData && blocksData.length > 0) {
+          setBlocks(blocksData);
+        }
+        if (villagesData && villagesData.length > 0) {
+          setVillages(villagesData);
         }
       } catch (err) {
-        console.warn('Using default canonical blocks fallback:', err);
+        console.warn('Using default canonical locations fallback:', err);
       }
     };
-    loadBlocks();
+    loadLocations();
   }, []);
 
   // Set selected block with callback
   const setSelectedBlockId = useCallback((id: number) => {
     setInternalBlockId(id);
+    setSelectedVillageId(null);
     if (propSetBlockId) {
       propSetBlockId(id);
+    }
+  }, [propSetBlockId]);
+
+  // Hierarchical selection handler
+  const selectLocationHierarchy = useCallback((district: string, blockId: number, villageId?: number | null) => {
+    setInternalBlockId(blockId);
+    setSelectedVillageId(villageId !== undefined ? villageId : null);
+    if (propSetBlockId) {
+      propSetBlockId(blockId);
     }
   }, [propSetBlockId]);
 
@@ -284,6 +330,7 @@ export const CanonicalPredictionProvider: React.FC<{
       blockName: selectedBlock.name,
       district: selectedBlock.district,
       state: selectedBlock.state || 'Maharashtra',
+      villageName: selectedVillage?.name,
       predictionTimestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       forecastHorizon,
       onsetProbability: onsetProb,
@@ -309,7 +356,7 @@ export const CanonicalPredictionProvider: React.FC<{
       isOperational: false,
       weatherObservations: sortedObs
     };
-  }, [selectedBlock, blockCode, forecastHorizon, weatherObs, multiEvent, falseOnset, decision]);
+  }, [selectedBlock, selectedVillage, blockCode, forecastHorizon, weatherObs, multiEvent, falseOnset, decision]);
 
   const navigateTo = useCallback((tab: string, blockId?: number) => {
     if (blockId) {
@@ -323,10 +370,18 @@ export const CanonicalPredictionProvider: React.FC<{
   return (
     <CanonicalPredictionContext.Provider
       value={{
+        selectedState,
+        districts,
+        selectedDistrict,
         selectedBlockId,
         selectedBlock,
         blocks,
+        villages,
+        selectedVillageId,
+        selectedVillage,
         setSelectedBlockId,
+        setSelectedVillageId,
+        selectLocationHierarchy,
         forecastHorizon,
         setForecastHorizon,
         canonical,
