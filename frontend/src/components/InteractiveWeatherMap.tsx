@@ -153,11 +153,12 @@ export const InteractiveWeatherMap: React.FC<InteractiveWeatherMapProps> = ({
         scrollWheelZoom: false,
       });
 
-      // CartoDB Positron provides subtle terrain, rivers, and roads without aggressive label clutter
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
-        subdomains: 'abcd',
+      // High-reliability free OpenStreetMap tile server with zero API key requirements
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        subdomains: 'abc',
         maxZoom: 19,
+        className: 'meghvani-gis-tiles',
       }).addTo(map);
 
       layersGroupRef.current = L.layerGroup().addTo(map);

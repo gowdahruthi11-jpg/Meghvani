@@ -100,3 +100,8 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #A8A29E;
 }
+
+/* High-clarity GIS map styling: softens OSM contrast to let Meghvani data overlays pop */
+.meghvani-gis-tiles {
+  filter: contrast(95%) brightness(101%) saturate(60%);
+}
