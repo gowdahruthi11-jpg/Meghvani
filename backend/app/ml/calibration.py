@@ -8,7 +8,7 @@ Strict Scientific Integrity Rules:
 3. If the available dataset has insufficient positive events to support a valid three-way temporal split,
    the calibrator records status "INSUFFICIENT_CALIBRATION_DATA" and preserves raw probabilities.
 """
-from typing import Dict, Any, Optional, Tuple, List
+from typing import Dict, Any, Optional, Tuple, List, Union
 import logging
 import numpy as np
 import pandas as pd
