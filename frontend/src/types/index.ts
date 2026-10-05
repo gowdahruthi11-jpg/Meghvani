@@ -413,6 +413,87 @@ export interface FeatureContribution {
   interpretation: string;
 }
 
+export interface XAIFeatureItem {
+  name: string;
+  label: string;
+  domain: string;
+  unit: string;
+  desc: string;
+  observed_value: number;
+  model_weight: number;
+  standardized_z: number;
+  contribution: number;
+  share_pct: number;
+  direction: 'REDUCING' | 'INCREASING' | 'NEUTRAL';
+  influence_label: string;
+  interpretation: string;
+}
+
+export interface XAIObservedConditions {
+  rainfall_7d_mm: number;
+  seedbed_moisture_status: string;
+  seasonal_progression_doy: number;
+  dry_spell_days: number;
+}
+
+export interface XAIWhatModelSees {
+  icon: 'rain' | 'seed' | 'calendar' | 'timer' | string;
+  title: string;
+  text: string;
+}
+
+export interface XAIActionFlow {
+  signal: string;
+  risk_target: string;
+  risk_pct: number;
+  risk_tier: string;
+  confidence: string;
+  posture: string;
+  posture_code: string;
+}
+
+export interface XAIModelMetadata {
+  model_name: string;
+  feature_count: number;
+  scaling: string;
+  calibration_method: string;
+  prediction_horizon: string;
+  prediction_target: string;
+  region: string;
+  loss_ratio_p_star?: number;
+  is_operational: boolean;
+}
+
+export interface FalseOnsetExplanationResponse {
+  block_id: string;
+  region_name: string;
+  district: string;
+  state: string;
+  prediction_date: string;
+  target: string;
+  horizon_days: number;
+  raw_probability: number;
+  probability_pct: number;
+  risk_tier: string;
+  confidence: number;
+  confidence_level: 'High' | 'Moderate' | 'Low';
+  confidence_pct: number;
+  features: XAIFeatureItem[];
+  top_drivers: XAIFeatureItem[];
+  reducing_drivers: XAIFeatureItem[];
+  increasing_drivers: XAIFeatureItem[];
+  observed_conditions: XAIObservedConditions;
+  what_model_sees: XAIWhatModelSees[];
+  model_synthesis: string;
+  decision: string;
+  decision_status: string;
+  decision_explanation: string;
+  action_flow: XAIActionFlow;
+  model_metadata: XAIModelMetadata;
+  scientific_disclaimer: string;
+}
+
+
 export interface ChronologicalEvaluation {
   evaluation_type: string;
   status: string;
@@ -773,5 +854,102 @@ export interface MultiEventSuiteSummary {
     status: string;
   };
 }
+
+export interface CommunicationGatewayStatus {
+  sms_provider: string;
+  mode: string;
+  is_live: boolean;
+  is_trial_mode?: boolean;
+  is_ready: boolean;
+  gateway_label: string;
+  twilio_phone_number_masked?: string | null;
+  trial_notice?: string | null;
+  webhook_validation_enabled: boolean;
+  timestamp: string;
+}
+
+export interface CommunicationSummary {
+  sms_received: number;
+  sms_sent: number;
+  active_farmers: number;
+  latest_advisory: {
+    snippet: string;
+    timestamp?: string | null;
+    status: string;
+  };
+}
+
+export interface CommunicationTransaction {
+  id: string;
+  direction: 'INBOUND' | 'OUTBOUND';
+  event_type: 'INBOUND_SMS' | 'OUTBOUND_SMS' | 'NEW_FARMER_REGISTERED' | 'ADVISORY' | 'ALERT' | 'AI_VOICE_ALERT';
+  channel?: string;
+  timestamp: string;
+  masked_phone: string;
+  raw_phone?: string;
+  message_preview: string;
+  full_message: string;
+  provider: string;
+  status: string;
+  step_before?: string;
+  step_after?: string;
+  farmer_id?: number | string | null;
+  farmer_name?: string | null;
+  village?: string | null;
+  block?: string | null;
+  crop?: string | null;
+  language?: string | null;
+  severity?: string;
+  disclaimer?: string;
+  consent?: string | null;
+  xai_context?: {
+    block_id: string;
+    region_name: string;
+    probability_pct: number;
+    risk_tier: string;
+    decision: string;
+    top_drivers: Array<{
+      label: string;
+      direction: string;
+      share_pct?: number;
+      observed_value?: number | string;
+      unit?: string;
+    }>;
+  } | null;
+}
+
+export interface VoiceAlertResponse {
+  status: string;
+  provider: string;
+  provider_label: string;
+  model: string;
+  speaker?: string;
+  speech_sample_rate?: number;
+  language: string;
+  language_name: string;
+  farmer_id: number;
+  farmer_name: string;
+  masked_phone: string;
+  village: string;
+  block: string;
+  crop: string;
+  crop_localized: string;
+  alert_type: string;
+  risk_level: string;
+  probability: number;
+  probability_pct: number;
+  advisory_text: string;
+  audio_content?: string | null;
+  audio_cached: boolean;
+  audio_content_length?: number;
+  audio_format?: string;
+  audio_bytes?: number;
+  alert_id?: number | null;
+  call_status: string;
+  disclaimer: string;
+  timestamp: string;
+  note?: string;
+}
+
 
 

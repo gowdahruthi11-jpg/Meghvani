@@ -980,11 +980,240 @@ cd meghvani
 
 ---
 
-## 25. NEXT PHASE
+## 26. Live SMS Demo
 
-**Phase 5C: Hyperlocal Rule Contextualization & Controlled Pilot Communications**
-- Localized sign-off on candidate intercropping rules with regional KVK agronomists
-- Soil-depth qualifiers (shallow vs medium-deep vertisols)
-- Controlled pilot dispatch with explicit farmer opt-in and consent
+### Overview: Mock Mode vs Live SMS Demo Mode
+
+Meghvani supports two runtime communication modes:
+- **MOCK MODE (`SMS_PROVIDER=MOCK`, Default)**: Works out of the box without external internet gateways or credentials. All SMS inbound and outbound interactions are simulated locally and audit-logged in SQLite.
+- **LIVE SMS DEMO MODE (`SMS_PROVIDER=TWILIO`)**: Connects to the real telecommunications network via Twilio REST APIs. Real phone SMS sent to the Meghvani number triggers the FastAPI inbound webhook, runs the conversational registration state machine, invokes the multi-event ML prediction and Explainable AI (XAI) pipeline, and sends real SMS responses back to the farmer's mobile device.
+
+### End-to-End Live SMS Flow
+
+```
+REAL PHONE ──(SMS: "MEGH")──> Twilio Phone Number
+                                     │
+                                     ▼
+                    Twilio Inbound Webhook (POST)
+                                     │
+                                     ▼ (via ngrok / public URL)
+              FastAPI Endpoint: /api/communication/sms/incoming
+                                     │
+                 ┌───────────────────┴───────────────────┐
+                 │ 1. Validate Twilio Webhook Signature   │
+                 │ 2. Check Idempotency (MessageSid)     │
+                 │ 3. Normalize Phone (+919876543210)    │
+                 │ 4. RegistrationService State Machine   │
+                 └───────────────────┬───────────────────┘
+                                     │
+                 ┌───────────────────┴───────────────────┐
+                 │ Conversational Flow:                  │
+                 │ MEGH -> Language -> PIN -> Village    │
+                 │      -> Crop -> Consent -> COMPLETED  │
+                 │                                       │
+                 │ If Registered + "STATUS":             │
+                 │ -> Multi-Event ML Prediction          │
+                 │ -> Explainable AI (Top Drivers)       │
+                 │ -> Dynamic Advisory Text Generation   │
+                 └───────────────────┬───────────────────┘
+                                     │
+                                     ▼
+                      Twilio Messages REST API (Outbound)
+                                     │
+                                     ▼
+                 REAL PHONE Receives Formatted Meghvani SMS
+```
+
+### Step-by-Step Live Demo Execution
+
+#### 1. Configure Environment Variables
+In `backend/.env`:
+```bash
+SMS_PROVIDER=TWILIO
+TWILIO_ACCOUNT_SID=ACXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+TWILIO_AUTH_TOKEN=your_twilio_auth_token_here
+TWILIO_PHONE_NUMBER=+1XXXXXXXXXX
+SMS_WEBHOOK_VALIDATION=true
+```
+*(For local testing before configuring ngrok domain signature, you can set `SMS_WEBHOOK_VALIDATION=false` to bypass signature checks while still dispatching real outbound SMS).*
+
+#### 2. Apply Database Migration
+```bash
+cd meghvani/backend
+# Either automatic on startup via app.database.migrations or via alembic:
+alembic upgrade head
+```
+
+#### 3. Start the Backend Server
+```bash
+cd meghvani/backend
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
+```
+
+#### 4. Start the Frontend Application
+```bash
+cd meghvani/frontend
+npm run dev
+```
+
+#### 5. Expose Backend Webhook via ngrok
+```bash
+ngrok http 8000
+```
+Note the forwarding HTTPS URL, e.g.: `https://abc1234.ngrok-free.app`.
+
+#### 6. Configure Twilio Inbound SMS Webhook
+In the Twilio Console (Phone Numbers $\to$ Active Numbers $\to$ Configure):
+- Under **A Message Comes In**:
+  - Webhook: `https://abc1234.ngrok-free.app/api/communication/sms/incoming`
+  - Method: `HTTP POST`
+- Save changes.
+
+#### 7. Live Demonstration on Real Phone
+1. From your personal phone, send SMS:
+   ```
+   MEGH
+   ```
+2. Meghvani immediately responds:
+   ```
+   Welcome to Meghvani.
+   Select language:
+   1 Hindi
+   2 Marathi
+   3 Kannada
+   4 English
+   Reply with number (1-4).
+   ```
+3. Reply with language choice: `1` (Hindi) or `2` (Marathi).
+4. Meghvani asks for PIN: Reply `441501`.
+5. Meghvani returns matching villages: Reply `1` (Kalmeshwar).
+6. Meghvani returns crops: Reply `1` (Soybean).
+7. Meghvani requests advisory consent: Reply `YES`.
+8. Meghvani responds: `Registration successful. Meghvani will send important weather and crop advisories...`
+9. Open the web UI at **Alert Center** (`http://localhost:5173/alerts`):
+   - Status badge shows: `SMS GATEWAY: ● LIVE (TWILIO)`
+   - The timeline shows real-time `[INBOUND]` and `[OUTBOUND]` transactions with masked phone `******XXXX`.
+   - A prominent `NEW FARMER REGISTERED` card displays the registered village, block, crop, language, and consent.
+10. From your phone, text:
+    ```
+    STATUS
+    ```
+11. Meghvani executes the multi-event ML prediction and XAI pipeline for your registered block and delivers a live SMS advisory to your phone:
+    ```
+    Meghvani Status: Active
+
+    MEGHVANI ADVISORY
+
+    Nagpur Rural
+
+    False onset probability: 18%
+    Risk: LOW RISK
+
+    Why:
+    • Seasonal Progression favorable / risk reducing
+    • 7-Day Cumulative Rainfall improving
+    • Dry-spell persistence monitored
+
+    Advice:
+    Moisture surge adequate. Favorable for sowing.
+
+    Reply STATUS for latest update.
+    ```
+12. Click on the transaction in the Alert Center to open the **Transaction Architecture Drill-Down**:
+    `Communication -> Farmer -> Location -> Model -> Prediction -> XAI -> Advisory -> SMS`.
+
+---
+
+## 15. AI Voice Call Alert System (Sarvam AI Bulbul v3)
+
+Meghvani implements an intelligent multi-channel communication escalation architecture:
+
+```
+┌────────────────────────────────────────────────────────┐
+│               Communication Routing Policy              │
+│                                                        │
+│  NORMAL       → SMS                                    │
+│  IMPORTANT    → SMS / WhatsApp                         │
+│  HIGH_RISK    → VOICE + SMS                            │
+└────────────────────────────────────────────────────────┘
+```
+
+When severe weather, false onset surges, or intense monsoon breaks hit the **HIGH_RISK** escalation threshold ($\ge 75\%$), Meghvani automatically escalates the notification from a standard text message to an **AI Voice Alert call**.
+
+### Transparency & Demonstration Notice
+> [!IMPORTANT]
+> **The current implementation provides an in-app voice-alert demonstration.**
+> Sarvam AI generates the advisory audio from the existing Meghvani ML and advisory engines.
+> A real telephone call requires a separate telephony provider (e.g. Twilio Voice / Exotel / Tata Telephony trunk).
+>
+> In accordance with our honesty standards:
+> - **We NEVER claim "Call Delivered"** for an in-app simulation.
+> - The system honestly reports:
+>   - **`Voice Alert Ready`**: Audio synthesized by Sarvam Bulbul v3 and buffered in cache.
+>   - **`Voice Alert Played`**: Farmer answered the call and listened to the audio advisory.
+
+### Features & Capabilities
+1. **Sarvam AI Bulbul v3 Neural TTS**:
+   - Backend service (`backend/app/services/sarvam_tts_service.py`) integrates with Sarvam AI's Bulbul v3 text-to-speech API.
+   - Converts hyperlocal, crop-specific advisory scripts into expressive Indian-accented natural speech.
+2. **Strict Backend Security**:
+   - `SARVAM_API_KEY` remains strictly on the FastAPI backend. It is **never exposed to frontend JavaScript or client bundles**.
+3. **Multilingual Regional Support**:
+   - Maps the farmer's registered language directly to official BCP-47 language codes:
+     - **Marathi**: `mr-IN`
+     - **Hindi**: `hi-IN`
+     - **Kannada**: `kn-IN`
+     - **English**: `en-IN`
+4. **Zero-Redundancy In-Memory Audio Caching**:
+   - Synthesized base64 audio data URIs are cached in-memory (`hash(language, text)`).
+   - Replaying the voice advisory in the farmer UI uses the cached audio with zero latency and **zero redundant Sarvam API calls**.
+5. **Graceful Demo Fallback**:
+   - If `SARVAM_API_KEY` is not configured or an API error occurs, Meghvani seamlessly falls back to browser-native `SpeechSynthesis`.
+   - The UI displays an honest badge:
+     - `AI VOICE — SARVAM BULBUL v3` (when Sarvam is active)
+     - `DEMO VOICE — SARVAM NOT CONNECTED` (when using fallback synthesis)
+6. **Farmer Mobile Phone UI (3 Dynamic States)**:
+   - **State A (SMS Chat)**: The standard two-way conversational SMS interface.
+   - **State B (Incoming Call)**: Realistic smartphone call screen with caller ID (`Meghvani Alert`), weather alert badge, ringing animation, and `🔴 Decline` / `🟢 Answer` controls.
+   - **State C (Call Active / Answered)**: Interactive call screen with audio waveform animation, elapsed call timer (`00:08`), Play/Pause, Replay from cache, End Call, and compact alert details (Location, Crop, Risk: HIGH, Probability: 82%, Advisory text).
+7. **Alert Center Synchronization & 9-Stage Drilldown**:
+   - Every voice alert triggers an `AI_VOICE_ALERT` event in the Alert Center communication timeline.
+   - Clicking the voice alert reveals the full 9-stage architecture trace:
+     `Communication Routing → Farmer Profile → Location Hierarchy → ML Prediction → Risk Assessment → XAI Attribution → Localized Advisory → Sarvam Voice Generation → Playback Simulation`.
+
+### Backend Configuration
+Add the following to `meghvani/backend/.env`:
+```env
+# Sarvam AI Text-to-Speech (Optional — defaults to Demo Voice fallback if omitted)
+SARVAM_API_KEY=your_sarvam_api_key_here
+SARVAM_TTS_MODEL=bulbul:v3
+```
+
+### Dedicated REST API Endpoints
+- **Trigger Voice Alert**:
+  ```http
+  POST /api/communication/voice-alert
+  Content-Type: application/json
+
+  {
+    "farmer_id": 1,
+    "force_high_risk": true
+  }
+  ```
+  *Response:* Returns voice metadata, audio data URI (base64 MP3), language, provider (`Sarvam AI (Bulbul v3)` or `Demo Voice (Fallback)`), and advisory text.
+
+- **Log Voice Lifecycle Event**:
+  ```http
+  POST /api/communication/voice-event
+  Content-Type: application/json
+
+  {
+    "farmer_id": 1,
+    "alert_id": 42,
+    "event": "ANSWERED",
+    "duration_seconds": 8
+  }
+  ```
+
 
 

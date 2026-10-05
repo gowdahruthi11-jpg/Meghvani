@@ -29,6 +29,7 @@ from app.api.validation import (
     calibration_router,
     rolling_origin_router
 )
+from app.api.communication import router as communication_router
 
 from app.database.migrations import run_migrations
 
@@ -75,6 +76,7 @@ app.include_router(demo_router, prefix="/api")
 app.include_router(validation_router, prefix="/api")
 app.include_router(calibration_router, prefix="/api")
 app.include_router(rolling_origin_router, prefix="/api")
+app.include_router(communication_router, prefix="/api")
 
 @app.get("/")
 def root():

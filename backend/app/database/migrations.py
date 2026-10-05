@@ -59,5 +59,33 @@ def run_migrations(engine: Engine):
                         logger.info(f"Adding missing column '{col_name}' to farmer_observations table.")
                         conn.execute(text(f"ALTER TABLE farmer_observations ADD COLUMN {col_name} {col_type}"))
                 conn.commit()
+
+                # Ensure inbound_messages table exists
+                res_tables = conn.execute(text("SELECT name FROM sqlite_master WHERE type='table' AND name='inbound_messages'"))
+                if not res_tables.fetchone():
+                    logger.info("Creating missing inbound_messages table.")
+                    conn.execute(text("""
+                        CREATE TABLE inbound_messages (
+                            id VARCHAR(36) PRIMARY KEY,
+                            provider VARCHAR(32) NOT NULL DEFAULT 'TWILIO',
+                            provider_message_id VARCHAR(128) UNIQUE,
+                            from_phone VARCHAR(32) NOT NULL,
+                            to_phone VARCHAR(32),
+                            message_body TEXT NOT NULL,
+                            normalized_body VARCHAR(255),
+                            received_at DATETIME NOT NULL,
+                            processing_status VARCHAR(32) NOT NULL DEFAULT 'RECEIVED',
+                            registration_step_before VARCHAR(32),
+                            registration_step_after VARCHAR(32),
+                            farmer_id VARCHAR(36) REFERENCES farmers(id) ON DELETE SET NULL,
+                            reply_message TEXT,
+                            reply_status VARCHAR(32),
+                            error_message TEXT
+                        )
+                    """))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inbound_messages_from_phone ON inbound_messages (from_phone)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inbound_messages_received_at ON inbound_messages (received_at)"))
+                    conn.execute(text("CREATE INDEX IF NOT EXISTS ix_inbound_messages_farmer_id ON inbound_messages (farmer_id)"))
+                    conn.commit()
         except Exception as e:
             logger.warning(f"Database migration check encountered note: {e}")

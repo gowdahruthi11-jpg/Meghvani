@@ -4,6 +4,10 @@ from pydantic import BaseModel, ConfigDict
 
 class RegistrationStartRequest(BaseModel):
     phone_number: str
+    force_new: Optional[bool] = False
+
+class RegistrationResetRequest(BaseModel):
+    phone_number: str
 
 class RegistrationMessageRequest(BaseModel):
     phone_number: str

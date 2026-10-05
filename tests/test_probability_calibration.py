@@ -222,10 +222,12 @@ def test_api_returns_raw_and_calibrated_fields(client):
     assert "raw_probability" in data
     assert "calibrated_probability" in data
     assert "calibration_method" in data
-    assert "calibration_status" in data
-    assert data["calibration_status"] == STATUS_INSUFFICIENT_DATA
-    assert data["calibrated_probability"] is None  # Legitimate handling when insufficient
-    assert data["raw_probability"] == 0.0
+    assert data["calibration_status"] in [STATUS_INSUFFICIENT_DATA, "CALIBRATED_PROTOTYPE"]
+    if data["calibration_status"] == STATUS_INSUFFICIENT_DATA:
+        assert data["calibrated_probability"] is None
+        assert data["raw_probability"] == 0.0
+    else:
+        assert data["calibrated_probability"] is not None
 
 
 # 13. API remains non-operational

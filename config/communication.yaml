@@ -4,8 +4,8 @@
 
 providers:
   sms:
-    type: "MOCK"
-    name: "MockSMSProvider"
+    type: "${SMS_PROVIDER}" # MOCK or TWILIO (configured via environment)
+    name: "SMSProvider"
     enabled: true
   voice:
     type: "MOCK"

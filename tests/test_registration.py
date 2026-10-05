@@ -105,3 +105,39 @@ def test_missed_call_registration_initiation(client: TestClient):
     assert data["current_step"] == "LANGUAGE"
     assert "Missed Call Detected" in data["reply_message"]
     assert "Select language" in data["reply_message"]
+
+
+def test_re_registration_and_reset_flow(client: TestClient):
+    phone = "+919876588888"
+
+    # Complete initial registration
+    client.post("/api/registration/start", json={"phone_number": phone})
+    client.post("/api/registration/message", json={"phone_number": phone, "message": "2"})
+    client.post("/api/registration/message", json={"phone_number": phone, "message": "441501"})
+    client.post("/api/registration/message", json={"phone_number": phone, "message": "1"})
+    client.post("/api/registration/message", json={"phone_number": phone, "message": "1"})
+    res_done = client.post("/api/registration/message", json={"phone_number": phone, "message": "YES"})
+    assert res_done.json()["is_completed"] is True
+
+    # 1. Verify ALREADY_REGISTERED response
+    res_already = client.post("/api/registration/start", json={"phone_number": phone})
+    assert res_already.json()["current_step"] == "ALREADY_REGISTERED"
+    assert "already registered" in res_already.json()["reply_message"]
+
+    # 2. Re-register via "UPDATE" / "REGISTER AGAIN" message
+    res_update = client.post("/api/registration/message", json={"phone_number": phone, "message": "REGISTER AGAIN"})
+    assert res_update.status_code == 200
+    assert res_update.json()["current_step"] == "LANGUAGE"
+    assert "Select language" in res_update.json()["reply_message"]
+
+    # 3. Test force_new on start endpoint
+    res_force = client.post("/api/registration/start", json={"phone_number": phone, "force_new": True})
+    assert res_force.status_code == 200
+    assert res_force.json()["current_step"] == "LANGUAGE"
+    assert "Select language" in res_force.json()["reply_message"]
+
+    # 4. Test explicit reset endpoint
+    res_reset = client.post("/api/registration/reset", json={"phone_number": phone})
+    assert res_reset.status_code == 200
+    assert res_reset.json()["current_step"] == "START"
+

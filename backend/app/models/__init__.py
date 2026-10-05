@@ -6,6 +6,7 @@ from app.models.weather import WeatherObservation
 from app.models.registration_session import RegistrationSession
 from app.models.farmer_observation import FarmerObservation
 from app.models.alert_log import AlertLog
+from app.models.inbound_message import InboundMessage
 
 __all__ = [
     "Block",
@@ -16,4 +17,5 @@ __all__ = [
     "RegistrationSession",
     "FarmerObservation",
     "AlertLog",
+    "InboundMessage",
 ]

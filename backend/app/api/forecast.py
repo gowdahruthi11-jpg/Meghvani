@@ -10,7 +10,8 @@ from app.ml.model_loader import (
     predict_block_false_onset,
     get_model_metadata,
     predict_block_multi_event,
-    get_multi_event_suite_summary
+    get_multi_event_suite_summary,
+    explain_block_false_onset
 )
 
 logger = logging.getLogger(__name__)
@@ -127,6 +128,35 @@ def get_false_onset_decision(block_id: str) -> Dict[str, Any]:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Decision evaluation error: {str(e)}"
+        )
+
+
+@router.get("/{block_id}/explain")
+@router.get("/{block_id}/false-onset/explain")
+def get_false_onset_explanation(block_id: str) -> Dict[str, Any]:
+    """
+    Computes rigorous instance-level explainability for a block's latest false-onset prediction.
+    Returns signed feature contributions, directional influence (REDUCING vs INCREASING),
+    top drivers, physical conditions observed, dynamic synthesis, and decision implication.
+    """
+    norm_id = _normalize_block_id(block_id)
+    try:
+        return explain_block_false_onset(norm_id)
+    except ValueError as ve:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(ve)
+        )
+    except FileNotFoundError as fe:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=str(fe)
+        )
+    except Exception as e:
+        logger.error(f"Explainability evaluation failed for block {norm_id}: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Explainability evaluation error: {str(e)}"
         )
 
 

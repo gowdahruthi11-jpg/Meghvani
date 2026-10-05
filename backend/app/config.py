@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import yaml
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Base directories
@@ -9,6 +10,16 @@ APP_DIR = Path(__file__).resolve().parent
 BACKEND_DIR = APP_DIR.parent
 PROJECT_ROOT = BACKEND_DIR.parent
 CONFIG_DIR = PROJECT_ROOT / "config"
+
+# Locate and load active .env file
+if (BACKEND_DIR / ".env").exists():
+    ACTIVE_ENV_FILE = BACKEND_DIR / ".env"
+elif (PROJECT_ROOT / ".env").exists():
+    ACTIVE_ENV_FILE = PROJECT_ROOT / ".env"
+else:
+    ACTIVE_ENV_FILE = BACKEND_DIR / ".env"
+
+load_dotenv(dotenv_path=ACTIVE_ENV_FILE, override=False)
 
 
 class Settings(BaseSettings):
@@ -27,8 +38,26 @@ class Settings(BaseSettings):
         "http://localhost:3000",
     ]
 
+    # SMS Provider & Twilio configuration
+    sms_provider: str = "MOCK"
+    twilio_account_sid: Optional[str] = None
+    twilio_auth_token: Optional[str] = None
+    twilio_phone_number: Optional[str] = None
+    sms_webhook_validation: bool = True
+    twilio_trial_mode: bool = False
+    twilio_trial_template_name: str = "sms_2fa"
+
+    # Sarvam AI Voice configuration (Bulbul v3 Text-to-Speech)
+    sarvam_api_key: Optional[str] = None
+    sarvam_tts_model: str = "bulbul:v3"
+    sarvam_tts_speaker: str = "shubh"
+    sarvam_tts_pace: float = 1.0
+    sarvam_tts_sample_rate: int = 24000
+    sarvam_output_audio_codec: str = "wav"
+
     model_config = SettingsConfigDict(
-        env_file=BACKEND_DIR / ".env",
+        env_file=(str(BACKEND_DIR / ".env"), str(PROJECT_ROOT / ".env")),
+        env_file_encoding="utf-8",
         extra="ignore"
     )
 

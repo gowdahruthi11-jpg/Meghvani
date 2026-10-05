@@ -27,7 +27,12 @@ import {
   DemoStatusResult,
   MultiYearValidationSummary,
   MultiEventForecastResponse,
-  MultiEventSuiteSummary
+  MultiEventSuiteSummary,
+  FalseOnsetExplanationResponse,
+  CommunicationGatewayStatus,
+  CommunicationSummary,
+  CommunicationTransaction,
+  VoiceAlertResponse
 } from '../types';
 
 
@@ -80,8 +85,14 @@ export const api = {
   getFarmerByPhone: (phone: string) => request<Farmer>(`/farmers/by-phone/${encodeURIComponent(phone)}`),
 
   // Registration
-  startRegistration: (phone_number: string) =>
+  startRegistration: (phone_number: string, force_new: boolean = false) =>
     request<RegistrationMessageResponse>('/registration/start', {
+      method: 'POST',
+      body: JSON.stringify({ phone_number, force_new }),
+    }),
+
+  resetRegistration: (phone_number: string) =>
+    request<RegistrationMessageResponse>('/registration/reset', {
       method: 'POST',
       body: JSON.stringify({ phone_number }),
     }),
@@ -245,6 +256,10 @@ export const api = {
   getFalseOnsetDecision: (blockId: string) =>
     request<DecisionSupportResult>(`/forecast/${blockId}/false-onset/decision`),
 
+  getFalseOnsetExplanation: (blockId: string) =>
+    request<FalseOnsetExplanationResponse>(`/forecast/${blockId}/false-onset/explain`),
+
+
   // Multi-Event Prediction Suite
   getMultiEventForecast: (blockId: string, horizonDays = 7) =>
     request<MultiEventForecastResponse>(`/forecast/${blockId}/multi-event?horizon_days=${horizonDays}`),
@@ -343,6 +358,47 @@ export const api = {
 
   getRollingOriginSummary: () =>
     request<any>('/validation/rolling-origin/summary'),
+
+  // Communication & Real SMS Gateway
+  getCommunicationStatus: () =>
+    request<CommunicationGatewayStatus>('/communication/status'),
+
+  getCommunicationSummary: () =>
+    request<CommunicationSummary>('/communication/summary'),
+
+  getCommunicationTimeline: (limit: number = 50) =>
+    request<CommunicationTransaction[]>(`/communication/timeline?limit=${limit}`),
+
+  testIncomingSMS: (payload: { from_phone: string; body: string; message_sid?: string }) =>
+    request<any>('/communication/test-incoming', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  // AI Voice Alert System (Sarvam AI Bulbul v3 & Demo Fallback)
+  triggerVoiceAlert: (payload: {
+    farmer_id?: number;
+    alert_id?: number;
+    language?: string;
+    force_high_risk?: boolean;
+    alert_type?: string;
+  }) =>
+    request<VoiceAlertResponse>('/communication/voice-alert', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
+
+  sendVoiceEvent: (payload: {
+    farmer_id?: number;
+    alert_id?: number;
+    event: string;
+    duration_seconds?: number;
+  }) =>
+    request<any>('/communication/voice-event', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    }),
 };
+
 
 

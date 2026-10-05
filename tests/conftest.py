@@ -12,6 +12,10 @@ BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
 
+# Isolate test suite from live provider configuration in .env
+os.environ["SMS_PROVIDER"] = "MOCK"
+os.environ["TWILIO_TRIAL_MODE"] = "false"
+
 from app.database.base import Base
 from app.database.database import get_db
 from app.database.seed import seed_database

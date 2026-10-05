@@ -16,7 +16,8 @@ import {
   Activity,
   Layers,
   HelpCircle,
-  ExternalLink
+  ExternalLink,
+  Smartphone
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -46,7 +47,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const secondaryNav = [
     { id: 'demo', label: 'SIH Demo Replay', icon: Play },
     { id: 'alerts', label: 'Alert Center', icon: Bell },
-    { id: 'farmers', label: 'Farmer Directory', icon: Users },
+    { id: 'farmers', label: 'Farmer Mobile SMS', icon: Smartphone },
     { id: 'observations', label: 'Ground Observations', icon: MessageSquare },
     { id: 'officer', label: 'Officer Dashboard', icon: ShieldCheck },
   ];

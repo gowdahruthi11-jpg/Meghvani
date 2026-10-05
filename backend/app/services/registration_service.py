@@ -70,26 +70,147 @@ class RegistrationService:
         return session
 
     @classmethod
-    def start_registration(cls, db: Session, phone_number: str) -> Tuple[str, str, bool, Optional[int]]:
+    def find_farmer_by_phone(cls, db: Session, phone_number: str) -> Optional[Farmer]:
+        """
+        Finds a farmer matching exact phone, normalized E.164, or last 10 digits.
+        """
+        if not phone_number:
+            return None
+        clean = phone_number.strip()
+        farmer = db.query(Farmer).filter(Farmer.phone_number == clean).first()
+        if farmer:
+            return farmer
+
+        from app.communication.twilio_sms import normalize_phone_number
+        norm = normalize_phone_number(clean)
+        if norm:
+            farmer = db.query(Farmer).filter(Farmer.phone_number == norm).first()
+            if farmer:
+                return farmer
+
+        digits = "".join(filter(str.isdigit, clean))
+        if len(digits) >= 10:
+            last10 = digits[-10:]
+            farmer = db.query(Farmer).filter(Farmer.phone_number.endswith(last10)).first()
+            if farmer:
+                return farmer
+
+        return None
+
+    @classmethod
+    def generate_status_advisory(cls, db: Session, farmer: Farmer) -> str:
+        """
+        Executes the Meghvani multi-event ML prediction and Explainable AI pipeline
+        to generate a dynamic, concise SMS advisory for the registered farmer's block.
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
+        try:
+            from app.ml.model_loader import explain_block_false_onset
+            block_id_norm = f"BLK{farmer.block_id:03d}" if farmer.block_id else "BLK003"
+            try:
+                xai = explain_block_false_onset(block_id_norm)
+            except Exception:
+                # Default to canonical profile BLK003 (Amravati Central) if block not found
+                xai = explain_block_false_onset("BLK003")
+
+            region_name = xai.get("region_name", farmer.village.name if farmer.village else "Vidarbha")
+            prob_pct = xai.get("probability_pct", 28)
+            risk_tier = xai.get("risk_tier", "Moderate Risk")
+            top_drivers = xai.get("top_drivers", [])
+            decision = xai.get("decision", "WAIT")
+
+            driver_lines = []
+            for d in top_drivers[:3]:
+                label = d.get("label", "Rainfall metric")
+                direction = d.get("direction", "NEUTRAL")
+                if direction == "REDUCING":
+                    driver_lines.append(f"• {label} improving (risk reducing)")
+                elif direction == "INCREASING":
+                    driver_lines.append(f"• {label} dry streak (risk increasing)")
+                else:
+                    driver_lines.append(f"• {label} monitored")
+
+            drivers_text = "\n".join(driver_lines) if driver_lines else "• Seasonal progression favorable"
+
+            if decision == "SOW_NOW":
+                advice = "Moisture surge adequate. Favorable for sowing."
+            elif decision == "SOW_PART_NOW":
+                advice = "Moderate risk. Delay full sowing or use seed treatment."
+            else:
+                advice = "Delay sowing until rainfall is sustained."
+
+            return (
+                f"Meghvani Status: Active\n\n"
+                f"MEGHVANI ADVISORY\n\n"
+                f"{region_name}\n\n"
+                f"False onset probability: {prob_pct}%\n"
+                f"Risk: {risk_tier.upper()}\n\n"
+                f"Why:\n{drivers_text}\n\n"
+                f"Advice:\n{advice}\n\n"
+                f"Reply STATUS for latest update."
+            )
+        except Exception as e:
+            logger.error(f"Error generating dynamic ML advisory for farmer {farmer.id}: {e}", exc_info=True)
+            return "Meghvani received your message, but the advisory service is temporarily unavailable. Please try again shortly."
+
+    @classmethod
+    def reset_registration(cls, db: Session, phone_number: str) -> Tuple[str, str, bool, Optional[int]]:
+        """
+        Deactivates active farmer profile and clears registration session back to START.
+        """
+        clean_phone = phone_number.strip()
+        existing_farmer = cls.find_farmer_by_phone(db, clean_phone)
+        if existing_farmer:
+            existing_farmer.active = False
+            db.commit()
+
+        session = cls.get_or_create_session(db, clean_phone)
+        session.current_step = "START"
+        session.language = None
+        session.pin_code = None
+        session.selected_village_id = None
+        session.selected_block_id = None
+        session.selected_crop_id = None
+        session.consent = False
+        session.updated_at = datetime.now(timezone.utc)
+        session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)
+        db.commit()
+        return "Registration reset. Text MEGH to start fresh.", "START", False, None
+
+    @classmethod
+    def start_registration(cls, db: Session, phone_number: str, force_new: bool = False) -> Tuple[str, str, bool, Optional[int]]:
         """
         Starts conversational registration when farmer sends MEGH or calls missed-call number.
+        If force_new is True, any existing farmer profile is deactivated to start a fresh demo.
         """
         clean_phone = phone_number.strip()
 
         # Check if already registered
-        existing_farmer = db.query(Farmer).filter(Farmer.phone_number == clean_phone).first()
+        existing_farmer = cls.find_farmer_by_phone(db, clean_phone)
         if existing_farmer and existing_farmer.active:
-            crop_name = existing_farmer.crop.name if existing_farmer.crop else "Unknown"
-            village_name = existing_farmer.village.name if existing_farmer.village else "Unknown"
-            msg = (
-                f"You are already registered with Meghvani!\n"
-                f"Village: {village_name} | Crop: {crop_name} | Language: {existing_farmer.preferred_language}\n"
-                f"Reply STATUS for advisory status, or UPDATE to change your preferences."
-            )
-            return msg, "ALREADY_REGISTERED", True, existing_farmer.id
+            if force_new:
+                existing_farmer.active = False
+                db.commit()
+            else:
+                crop_name = existing_farmer.crop.name if existing_farmer.crop else "Unknown"
+                village_name = existing_farmer.village.name if existing_farmer.village else "Unknown"
+                msg = (
+                    f"You are already registered with Meghvani!\n"
+                    f"Village: {village_name} | Crop: {crop_name} | Language: {existing_farmer.preferred_language}\n"
+                    f"Reply STATUS for advisory status, or UPDATE to change your preferences."
+                )
+                return msg, "ALREADY_REGISTERED", True, existing_farmer.id
 
         session = cls.get_or_create_session(db, clean_phone)
         session.current_step = "LANGUAGE"
+        session.language = None
+        session.pin_code = None
+        session.selected_village_id = None
+        session.selected_block_id = None
+        session.selected_crop_id = None
+        session.consent = False
         session.updated_at = datetime.now(timezone.utc)
         session.expires_at = datetime.now(timezone.utc) + timedelta(minutes=60)
         db.commit()
@@ -113,23 +234,21 @@ class RegistrationService:
             return cls.start_registration(db, clean_phone)
 
         # Check if already registered
-        existing_farmer = db.query(Farmer).filter(Farmer.phone_number == clean_phone).first()
+        existing_farmer = cls.find_farmer_by_phone(db, clean_phone)
         if existing_farmer and existing_farmer.active:
             if upper_text == "STATUS":
+                advisory_msg = cls.generate_status_advisory(db, existing_farmer)
                 return (
-                    f"Meghvani Status: Active\n"
-                    f"Registered Crop: {existing_farmer.crop.name}\n"
-                    f"Language: {existing_farmer.preferred_language}\n"
-                    f"Alert Channel: {existing_farmer.communication_preference}",
+                    advisory_msg,
                     "STATUS",
                     True,
                     existing_farmer.id
                 )
-            elif upper_text == "UPDATE":
-                # Allow re-registration
+            elif upper_text in ["UPDATE", "RESET", "REREGISTER", "REGISTER AGAIN", "REGISTER_AGAIN", "NEW"]:
+                # Allow re-registration: deactivate old profile and start fresh at Language selection
                 existing_farmer.active = False
                 db.commit()
-                return cls.start_registration(db, clean_phone)
+                return cls.start_registration(db, clean_phone, force_new=True)
             else:
                 return (
                     "You are already registered with Meghvani. Reply STATUS for advisory info, or UPDATE to update preferences.",

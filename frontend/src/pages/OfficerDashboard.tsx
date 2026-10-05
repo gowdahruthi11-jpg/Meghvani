@@ -33,6 +33,7 @@ import { AgricultureMetricCard } from '../components/AgricultureMetricCard';
 import { InteractiveWeatherMap } from '../components/InteractiveWeatherMap';
 import { RecentRainfallChart } from '../components/RecentRainfallChart';
 import { FarmerMessageCard } from '../components/FarmerMessageCard';
+import { BlockRiskMap } from '../components/BlockRiskMap';
 
 export const OfficerDashboard: React.FC = () => {
   const [farmers, setFarmers] = useState<Farmer[]>([]);
@@ -56,6 +57,11 @@ export const OfficerDashboard: React.FC = () => {
   const [selectedAlertType, setSelectedAlertType] = useState<string>('ONSET');
   const [dispatchStatus, setDispatchStatus] = useState<string | null>(null);
   const [dispatching, setDispatching] = useState<boolean>(false);
+
+  // Officer-only Block Risk Map state
+  const [officerMapBlock, setOfficerMapBlock] = useState<string>('BLK001');
+  const [forecastHorizon, setForecastHorizon] = useState<'week1' | 'week2' | 'week3' | 'week4'>('week1');
+  const [riskEvent, setRiskEvent] = useState<'onset' | 'break' | 'heavyRain'>('onset');
 
   const selectedBlock = blocks.find((b) => b.id === selectedBlockId) || blocks[0] || {
     id: 1,
@@ -429,7 +435,143 @@ export const OfficerDashboard: React.FC = () => {
         />
       </div>
 
-      {/* Main Spatial Weather Map Section for Officer Analysis */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      {/* OFFICER-ONLY: Block-Level Risk Map                          */}
+      {/* This section is intentionally restricted to officer view.   */}
+      {/* DO NOT surface block-level risk probabilities to farmers.   */}
+      {/* ═══════════════════════════════════════════════════════════ */}
+      <div className="p-6 rounded-2xl bg-white border-2 border-forest-200 shadow-sm space-y-5">
+        {/* Header with Officer-Only Badge */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-stone-200">
+          <div>
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xl">🗺️</span>
+              <h3 className="text-base font-bold text-stone-900 tracking-tight">Block-Level Risk Map</h3>
+              <span className="text-[10px] font-black uppercase tracking-wider text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full flex items-center gap-1">
+                <Lock className="w-3 h-3" /> Officer Only
+              </span>
+            </div>
+            <p className="text-xs text-stone-500">
+              Spatial block-level risk probabilities for Vidarbha zone. Choose event type and forecast week.
+            </p>
+          </div>
+
+          {/* Event + Horizon Selectors */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+            {/* Event Selector */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Event</span>
+              <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs font-semibold">
+                {([
+                  { key: 'onset', label: 'Onset' },
+                  { key: 'break', label: 'Break / Dry Spell' },
+                  { key: 'heavyRain', label: 'Heavy Rain' },
+                ] as const).map((ev) => (
+                  <button
+                    key={ev.key}
+                    type="button"
+                    onClick={() => setRiskEvent(ev.key)}
+                    className={`px-2.5 py-1.5 rounded-lg transition-all ${
+                      riskEvent === ev.key
+                        ? 'bg-forest-800 text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-white'
+                    }`}
+                  >
+                    {ev.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Week Horizon Selector */}
+            <div className="space-y-1">
+              <span className="text-[10px] font-bold text-stone-500 uppercase tracking-wider block">Forecast Horizon</span>
+              <div className="flex items-center gap-1 p-1 bg-stone-100 rounded-xl border border-stone-200 text-xs font-semibold">
+                {([
+                  { key: 'week1', label: 'Week 1' },
+                  { key: 'week2', label: 'Week 2' },
+                  { key: 'week3', label: 'Week 3' },
+                  { key: 'week4', label: 'Week 4' },
+                ] as const).map((wk) => (
+                  <button
+                    key={wk.key}
+                    type="button"
+                    onClick={() => setForecastHorizon(wk.key)}
+                    className={`px-2.5 py-1.5 rounded-lg transition-all ${
+                      forecastHorizon === wk.key
+                        ? 'bg-forest-800 text-white shadow-xs'
+                        : 'text-stone-600 hover:text-stone-900 hover:bg-white'
+                    }`}
+                  >
+                    {wk.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Horizon & Event Context Banner */}
+        <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-forest-50 border border-forest-200 text-xs">
+          <Info className="w-4 h-4 text-forest-700 shrink-0" />
+          <span className="text-forest-900">
+            Showing <strong>{riskEvent === 'onset' ? 'Monsoon Onset' : riskEvent === 'break' ? 'Dry Spell / Break' : 'Heavy Rainfall'}</strong> risk
+            probabilities for <strong>{forecastHorizon === 'week1' ? 'Week 1 (Day 1–7)' : forecastHorizon === 'week2' ? 'Week 2 (Day 8–14)' : forecastHorizon === 'week3' ? 'Week 3 (Day 15–21)' : 'Week 4 (Day 22–28)'}</strong>.
+            {forecastHorizon !== 'week1' && (
+              <span className="ml-1 text-amber-700 font-semibold">
+                Extended-range skill degrades beyond Week 1 — treat as indicative only.
+              </span>
+            )}
+          </span>
+        </div>
+
+        {/* BlockRiskMap Component */}
+        <BlockRiskMap
+          selectedBlockId={officerMapBlock}
+          onSelectBlock={setOfficerMapBlock}
+          blocks={blocks}
+        />
+
+        {/* Selected Block Detail */}
+        {officerMapBlock && (() => {
+          const horizonMultiplier = forecastHorizon === 'week1' ? 1.0 : forecastHorizon === 'week2' ? 1.15 : forecastHorizon === 'week3' ? 1.25 : 1.35;
+          const baseRisks: Record<string, { fo: number; br: number; hr: number; decision: string; breakLen: string }> = {
+            BLK001: { fo: 0.18, br: 0.22, hr: 0.12, decision: 'SOW_NOW', breakLen: '4–6 days' },
+            BLK002: { fo: 0.35, br: 0.40, hr: 0.25, decision: 'SOW_PART_NOW', breakLen: '7–10 days' },
+            BLK003: { fo: 0.64, br: 0.58, hr: 0.45, decision: 'WAIT', breakLen: '12–15 days' },
+          };
+          const d = baseRisks[officerMapBlock];
+          if (!d) return null;
+          const risk = riskEvent === 'onset' ? Math.min(d.fo * horizonMultiplier, 1) : riskEvent === 'break' ? Math.min(d.br * horizonMultiplier, 1) : Math.min(d.hr * horizonMultiplier, 1);
+          const riskLabel = risk < 0.30 ? 'LOW' : risk < 0.60 ? 'MODERATE' : 'HIGH';
+          const riskColor = risk < 0.30 ? 'text-emerald-800 bg-emerald-100 border-emerald-300' : risk < 0.60 ? 'text-amber-800 bg-amber-100 border-amber-300' : 'text-rose-800 bg-rose-100 border-rose-300';
+          const blockName = officerMapBlock === 'BLK001' ? 'Nagpur Rural' : officerMapBlock === 'BLK002' ? 'Wardha East' : 'Amravati Central';
+          return (
+            <div className="mt-2 p-4 rounded-xl bg-stone-50 border border-stone-200 grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
+              <div>
+                <span className="text-stone-500 block font-semibold uppercase tracking-wider text-[10px]">Selected Block</span>
+                <span className="font-bold text-stone-900 mt-0.5 block">{blockName}</span>
+              </div>
+              <div>
+                <span className="text-stone-500 block font-semibold uppercase tracking-wider text-[10px]">Risk Probability</span>
+                <span className={`font-black mt-0.5 block text-base font-mono ${risk >= 0.6 ? 'text-rose-700' : risk >= 0.3 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                  {(risk * 100).toFixed(0)}%
+                </span>
+              </div>
+              <div>
+                <span className="text-stone-500 block font-semibold uppercase tracking-wider text-[10px]">Risk Category</span>
+                <span className={`font-bold px-2 py-0.5 rounded-full border text-[11px] mt-0.5 inline-block ${riskColor}`}>{riskLabel}</span>
+              </div>
+              <div>
+                <span className="text-stone-500 block font-semibold uppercase tracking-wider text-[10px]">Expected Break Length</span>
+                <span className="font-bold text-stone-900 mt-0.5 block">{d.breakLen}</span>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+
+      {/* Spatial Weather Map (still useful for officers for spatial orientation) */}
       <div className="min-h-[420px]">
         <InteractiveWeatherMap
           blocks={blocks}

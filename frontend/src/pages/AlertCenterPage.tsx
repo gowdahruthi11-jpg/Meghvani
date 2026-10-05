@@ -16,14 +16,43 @@ import {
   Lock,
   Layers,
   Sparkles,
-  Info
+  Info,
+  Radio,
+  Zap,
+  UserCheck,
+  ChevronRight,
+  Cpu,
+  MapPin,
+  Clock,
+  Check,
+  Volume2
 } from 'lucide-react';
 import { api } from '../services/api';
-import { AlertLogAudit, AlertPreviewResponse, AlertSimulationResult } from '../types';
+import {
+  AlertLogAudit,
+  AlertPreviewResponse,
+  AlertSimulationResult,
+  CommunicationGatewayStatus,
+  CommunicationSummary,
+  CommunicationTransaction
+} from '../types';
 
 export const AlertCenterPage: React.FC = () => {
-  const [activeSubTab, setActiveSubTab] = useState<'dashboard' | 'sandbox'>('dashboard');
-  
+  const [activeSubTab, setActiveSubTab] = useState<'timeline' | 'dashboard' | 'sandbox'>('timeline');
+
+  // Gateway & Timeline State
+  const [gatewayStatus, setGatewayStatus] = useState<CommunicationGatewayStatus | null>(null);
+  const [commSummary, setCommSummary] = useState<CommunicationSummary | null>(null);
+  const [timeline, setTimeline] = useState<CommunicationTransaction[]>([]);
+  const [loadingTimeline, setLoadingTimeline] = useState<boolean>(true);
+  const [selectedTransaction, setSelectedTransaction] = useState<CommunicationTransaction | null>(null);
+
+  // Quick SMS Test Form State
+  const [testPhone, setTestPhone] = useState<string>('+919876543210');
+  const [testBody, setTestBody] = useState<string>('MEGH');
+  const [isSendingTest, setIsSendingTest] = useState<boolean>(false);
+  const [testFeedback, setTestFeedback] = useState<string | null>(null);
+
   // Dashboard state
   const [alerts, setAlerts] = useState<AlertLogAudit[]>([]);
   const [loadingAlerts, setLoadingAlerts] = useState<boolean>(true);
@@ -45,6 +74,25 @@ export const AlertCenterPage: React.FC = () => {
   const [simResult, setSimResult] = useState<AlertSimulationResult | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
+  // Fetch Gateway & Timeline
+  const fetchCommunicationData = async () => {
+    try {
+      const [statusRes, summaryRes, timelineRes] = await Promise.all([
+        api.getCommunicationStatus(),
+        api.getCommunicationSummary(),
+        api.getCommunicationTimeline(60)
+      ]);
+      setGatewayStatus(statusRes);
+      setCommSummary(summaryRes);
+      setTimeline(timelineRes);
+    } catch (err) {
+      console.error('Failed to fetch communication data:', err);
+    } finally {
+      setLoadingTimeline(false);
+    }
+  };
+
+  // Fetch Officer Audit Alerts
   const fetchAlerts = async () => {
     setLoadingAlerts(true);
     try {
@@ -63,6 +111,18 @@ export const AlertCenterPage: React.FC = () => {
   };
 
   useEffect(() => {
+    fetchCommunicationData();
+    fetchAlerts();
+
+    // Auto-poll communication timeline every 3.5 seconds for live SMS updates
+    const interval = setInterval(() => {
+      fetchCommunicationData();
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     fetchAlerts();
   }, [statusFilter, channelFilter, severityFilter]);
 
@@ -70,10 +130,33 @@ export const AlertCenterPage: React.FC = () => {
   const totalAlerts = alerts.length;
   const successfulCount = alerts.filter(a => a.status === 'SIMULATED_SENT').length;
   const fallbackCount = alerts.filter(a => a.status === 'FALLBACK_USED').length;
-  const failedCount = alerts.filter(a => a.status === 'SIMULATED_FAILED').length;
   const consentBlockedCount = alerts.filter(a => a.status === 'BLOCKED_NO_CONSENT').length;
   const noRuleBlockedCount = alerts.filter(a => a.status === 'BLOCKED_NO_VALIDATED_RULE').length;
-  const duplicateCount = alerts.filter(a => a.status === 'DUPLICATE_SUPPRESSED').length;
+
+  const handleSendTestSMS = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!testPhone || !testBody) return;
+    setIsSendingTest(true);
+    setTestFeedback(null);
+    try {
+      const res = await api.testIncomingSMS({
+        from_phone: testPhone,
+        body: testBody
+      });
+      setTestFeedback(`Processed: Step -> ${res.step_after || 'DONE'}. Reply sent!`);
+      // Update body to sensible next step
+      if (testBody.toUpperCase() === 'MEGH') setTestBody('1');
+      else if (testBody === '1') setTestBody('441501');
+      else if (testBody === '441501') setTestBody('1');
+      else if (testBody === '1') setTestBody('YES');
+      else if (testBody.toUpperCase() === 'YES') setTestBody('STATUS');
+      fetchCommunicationData();
+    } catch (err: any) {
+      setTestFeedback(`Error: ${err.message || 'Failed to dispatch test SMS'}`);
+    } finally {
+      setIsSendingTest(false);
+    }
+  };
 
   const handlePreview = async () => {
     setPreviewing(true);
@@ -107,8 +190,8 @@ export const AlertCenterPage: React.FC = () => {
         force_failure_channel: simForceFailure || undefined
       });
       setSimResult(data);
-      // Refresh dashboard table in background
       fetchAlerts();
+      fetchCommunicationData();
     } catch (err: any) {
       setErrorMessage(err.message || 'Failed to simulate alert dispatch');
     } finally {
@@ -117,22 +200,36 @@ export const AlertCenterPage: React.FC = () => {
   };
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'SIMULATED_SENT':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">SIMULATED SENT</span>;
-      case 'FALLBACK_USED':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-800">FALLBACK USED</span>;
-      case 'BLOCKED_NO_CONSENT':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-800">NO CONSENT</span>;
-      case 'BLOCKED_NO_VALIDATED_RULE':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-400 border border-purple-800">NO VALIDATED RULE</span>;
-      case 'DUPLICATE_SUPPRESSED':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-950/80 text-blue-400 border border-blue-800">DUPLICATE SUPPRESSED</span>;
-      case 'SIMULATED_FAILED':
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-red-950/80 text-red-400 border border-red-800">FAILED</span>;
-      default:
-        return <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300">{status}</span>;
+    const s = status.toUpperCase();
+    if (s.includes('SENT') || s === 'RECEIVED' || s === 'SUCCESS') {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+          <CheckCircle className="w-3 h-3 mr-1" />
+          {status}
+        </span>
+      );
     }
+    if (s.includes('PROCESSED') || s.includes('PENDING') || s.includes('FALLBACK')) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-950/80 text-amber-300 border border-amber-800">
+          <RefreshCw className="w-3 h-3 mr-1 animate-spin" />
+          {status}
+        </span>
+      );
+    }
+    if (s.includes('DUPLICATE')) {
+      return (
+        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-950/80 text-blue-400 border border-blue-800">
+          {status}
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-rose-950/80 text-rose-400 border border-rose-800">
+        <XCircle className="w-3 h-3 mr-1" />
+        {status}
+      </span>
+    );
   };
 
   const getSeverityBadge = (severity?: string) => {
@@ -165,52 +262,764 @@ export const AlertCenterPage: React.FC = () => {
               <div>
                 <div className="flex items-center space-x-2">
                   <h1 className="text-2xl font-black text-white tracking-tight">Alert Center</h1>
-                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-950 text-sky-400 border border-sky-800">
-                    PHASE 6A
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 border border-emerald-800">
+                    REAL SMS ENABLED
                   </span>
                 </div>
                 <p className="text-xs text-slate-400">
-                  Communication Simulation & Multi-Channel Alert Routing with Automated Fallback
+                  Live Conversational Registration, Multi-Event ML Advisories & Multi-Channel Alert Routing
                 </p>
               </div>
             </div>
           </div>
 
+          {/* Gateway Status Badge */}
           <div className="flex items-center space-x-3">
-            <div className="bg-slate-950/80 border border-amber-500/30 rounded-xl px-4 py-2 text-right">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-amber-400 flex items-center justify-end space-x-1">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>MOCK SIMULATION ONLY</span>
+            <div className={`rounded-xl px-4 py-2 border shadow-lg ${
+              gatewayStatus?.is_live
+                ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-300'
+                : 'bg-slate-950/80 border-amber-500/40 text-amber-400'
+            }`}>
+              <div className="text-[10px] font-black uppercase tracking-wider flex items-center space-x-1.5">
+                <span className={`w-2 h-2 rounded-full animate-ping ${gatewayStatus?.is_live ? 'bg-emerald-400' : 'bg-amber-400'}`} />
+                <span>{gatewayStatus?.gateway_label || 'SMS GATEWAY: ● MOCK (SIMULATION)'}</span>
               </div>
-              <div className="text-xs text-slate-400">external_dispatch: false</div>
+              <div className="text-[11px] text-slate-300 font-mono mt-0.5">
+                {gatewayStatus?.is_live
+                  ? `Twilio: ${gatewayStatus.twilio_phone_number_masked || 'Active'}`
+                  : 'Mode: SIMULATION (Mock Provider)'}
+              </div>
             </div>
+
+            <button
+              onClick={() => {
+                fetchCommunicationData();
+                fetchAlerts();
+              }}
+              className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700 transition"
+              title="Refresh timeline"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
           </div>
         </div>
 
         {/* Tab Switcher */}
-        <div className="flex space-x-2 mt-6 pt-6 border-t border-slate-800/80">
+        <div className="flex space-x-2 mt-6 pt-6 border-t border-slate-800/80 overflow-x-auto">
+          <button
+            onClick={() => setActiveSubTab('timeline')}
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex items-center space-x-2 ${
+              activeSubTab === 'timeline'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                : 'bg-slate-800/60 text-slate-400 hover:text-slate-200'
+            }`}
+          >
+            <Radio className="w-4 h-4" />
+            <span>Live Communication Timeline</span>
+          </button>
           <button
             onClick={() => setActiveSubTab('dashboard')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex items-center space-x-2 ${
               activeSubTab === 'dashboard'
                 ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
                 : 'bg-slate-800/60 text-slate-400 hover:text-slate-200'
             }`}
           >
-            Officer Alert Audit Dashboard
+            <ShieldCheck className="w-4 h-4" />
+            <span>Officer Alert Audit Dashboard</span>
           </button>
           <button
             onClick={() => setActiveSubTab('sandbox')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all whitespace-nowrap flex items-center space-x-2 ${
               activeSubTab === 'sandbox'
                 ? 'bg-sky-500 text-white shadow-lg shadow-sky-500/25'
                 : 'bg-slate-800/60 text-slate-400 hover:text-slate-200'
             }`}
           >
-            Farmer Simulation & Resilience Sandbox
+            <Zap className="w-4 h-4" />
+            <span>Farmer Simulation & Sandbox</span>
+          </button>
+
+          <button
+            onClick={() => window.dispatchEvent(new CustomEvent('meghvani:navigate', { detail: { tab: 'farmers' } }))}
+            className="ml-auto px-4 py-2 rounded-lg text-sm font-bold transition-all whitespace-nowrap flex items-center space-x-2 bg-forest-800 hover:bg-forest-900 text-white border border-forest-600 shadow-md"
+            title="Open realistic mobile phone SMS interface"
+          >
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            <span>Farmer Mobile Phone (SMS) ↗</span>
           </button>
         </div>
       </div>
+
+      {/* ========================================================================= */}
+      {/* 0. LIVE COMMUNICATION TIMELINE TAB (PRIMARY SIH DEMO)                      */}
+      {/* ========================================================================= */}
+      {activeSubTab === 'timeline' && (
+        <div className="space-y-6">
+          {/* Top 4 Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-sky-400 font-semibold uppercase tracking-wider">SMS Received</span>
+                <MessageSquare className="w-4 h-4 text-sky-400" />
+              </div>
+              <div className="text-3xl font-black text-white mt-1">
+                {commSummary?.sms_received ?? 0}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Inbound farmer webhooks</div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-emerald-400 font-semibold uppercase tracking-wider">SMS Sent</span>
+                <Send className="w-4 h-4 text-emerald-400" />
+              </div>
+              <div className="text-3xl font-black text-emerald-300 mt-1">
+                {commSummary?.sms_sent ?? 0}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Dispatched replies & alerts</div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-purple-400 font-semibold uppercase tracking-wider">Active Farmers</span>
+                <UserCheck className="w-4 h-4 text-purple-400" />
+              </div>
+              <div className="text-3xl font-black text-purple-300 mt-1">
+                {commSummary?.active_farmers ?? 0}
+              </div>
+              <div className="text-[11px] text-slate-400 mt-1">Registered & consented</div>
+            </div>
+
+            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-amber-400 font-semibold uppercase tracking-wider">Latest Advisory</span>
+                <Zap className="w-4 h-4 text-amber-400" />
+              </div>
+              <div className="text-xs text-slate-200 mt-1 font-medium truncate" title={commSummary?.latest_advisory.snippet}>
+                {commSummary?.latest_advisory.snippet || 'Standing by...'}
+              </div>
+              <div className="text-[10px] text-amber-500/80 mt-1">
+                {commSummary?.latest_advisory.timestamp
+                  ? new Date(commSummary.latest_advisory.timestamp).toLocaleTimeString()
+                  : 'Multi-event pipeline'}
+              </div>
+            </div>
+          </div>
+
+          {/* Quick Interactive SMS Simulator Bar */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-md">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <div className="text-xs font-bold text-white uppercase tracking-wider flex items-center space-x-2">
+                  <Smartphone className="w-4 h-4 text-emerald-400" />
+                  <span>Real SMS Simulator / Webhook Test Console</span>
+                </div>
+                <p className="text-[11px] text-slate-400">
+                  Simulate incoming farmer text or test conversational flow (MEGH $\to$ PIN $\to$ Village $\to$ Crop $\to$ Consent $\to$ STATUS).
+                </p>
+              </div>
+
+              <form onSubmit={handleSendTestSMS} className="flex flex-wrap items-center gap-2">
+                <input
+                  type="text"
+                  value={testPhone}
+                  onChange={(e) => setTestPhone(e.target.value)}
+                  placeholder="+919876543210"
+                  className="bg-slate-950 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 font-mono focus:border-emerald-500 outline-none w-36"
+                />
+                <input
+                  type="text"
+                  value={testBody}
+                  onChange={(e) => setTestBody(e.target.value)}
+                  placeholder="e.g. MEGH, 1, 441501, STATUS"
+                  className="bg-slate-950 border border-slate-700 text-xs text-white rounded-lg px-3 py-1.5 focus:border-emerald-500 outline-none w-48"
+                />
+                <button
+                  type="submit"
+                  disabled={isSendingTest}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-xs px-4 py-1.5 rounded-lg flex items-center space-x-1.5 transition disabled:opacity-50"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  <span>{isSendingTest ? 'Sending...' : 'Send SMS'}</span>
+                </button>
+              </form>
+            </div>
+            {testFeedback && (
+              <div className="mt-2 text-xs font-mono text-emerald-400 bg-emerald-950/40 px-3 py-1 rounded border border-emerald-900/50">
+                {testFeedback}
+              </div>
+            )}
+          </div>
+
+          {/* Main Chronological Timeline */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center space-x-2">
+                  <Radio className="w-5 h-5 text-emerald-400 animate-pulse" />
+                  <span>Live Communication Timeline</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Real-time transaction log for inbound webhooks and outbound replies. Click any entry to inspect the full architecture pipeline.
+                </p>
+              </div>
+              <div className="text-xs text-slate-400 font-mono">
+                Auto-refresh: <span className="text-emerald-400 font-bold">ACTIVE (3.5s)</span>
+              </div>
+            </div>
+
+            {loadingTimeline && timeline.length === 0 ? (
+              <div className="py-12 text-center text-slate-500 text-sm">Loading live transactions...</div>
+            ) : timeline.length === 0 ? (
+              <div className="py-12 text-center text-slate-500 text-sm">
+                No transactions recorded yet. Send SMS with body &quot;MEGH&quot; to begin!
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {timeline.map((tx) => {
+                  const isInbound = tx.direction === 'INBOUND';
+                  const isRegistrationSuccess = tx.event_type === 'NEW_FARMER_REGISTERED';
+                  const isAdvisory = tx.event_type === 'ADVISORY' || tx.step_after === 'STATUS';
+                  const isVoice = tx.channel === 'VOICE' || tx.event_type === 'AI_VOICE_ALERT';
+
+                  // Prominent AI VOICE ALERT Card
+                  if (isVoice) {
+                    const isPlayed = tx.status === 'PLAYED' || tx.status === 'COMPLETED';
+                    const isReady = tx.status === 'READY';
+                    return (
+                      <div
+                        key={tx.id}
+                        onClick={() => setSelectedTransaction(tx)}
+                        className="cursor-pointer bg-gradient-to-r from-purple-950/80 via-slate-900 to-slate-950 border-2 border-purple-500/70 rounded-xl p-4 shadow-lg hover:border-purple-400 transition"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2.5 border-b border-purple-900/50">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-0.5 rounded text-[11px] font-black tracking-wider uppercase bg-purple-900/90 text-purple-200 border border-purple-600 flex items-center space-x-1.5 shadow-sm">
+                              <PhoneCall className="w-3 h-3 text-purple-300" />
+                              <span>AI VOICE ALERT — DEMO</span>
+                            </span>
+                            <span className="font-mono text-xs font-bold text-white">
+                              {tx.masked_phone}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-mono">
+                              {tx.timestamp ? new Date(tx.timestamp).toLocaleTimeString() : ''}
+                            </span>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                              {tx.provider || 'Sarvam AI (Bulbul v3)'}
+                            </span>
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800">
+                              HIGH_RISK
+                            </span>
+                            {isPlayed ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-950/80 text-emerald-400 border border-emerald-800">
+                                <CheckCircle className="w-3 h-3 mr-1" />
+                                Voice Alert Played
+                              </span>
+                            ) : isReady ? (
+                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-purple-950/80 text-purple-300 border border-purple-700">
+                                <Volume2 className="w-3 h-3 mr-1" />
+                                Voice Alert Ready
+                              </span>
+                            ) : (
+                              getStatusBadge(tx.status)
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="mt-2.5 flex items-start justify-between gap-4">
+                          <div className="space-y-1.5">
+                            <div className="flex items-center space-x-2">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-purple-900/50 text-purple-300 border border-purple-800">
+                                Language: {tx.language ? tx.language.toUpperCase() : 'MR'}
+                              </span>
+                              <span className="text-xs text-purple-300 font-medium flex items-center space-x-1">
+                                <Volume2 className="w-3.5 h-3.5 text-purple-400" />
+                                <span>Bulbul v3 TTS Audio Advisory</span>
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed bg-slate-950/80 p-3 rounded-lg border border-purple-950">
+                              &quot;{tx.full_message}&quot;
+                            </p>
+                            <div className="text-[11px] text-slate-400 flex flex-wrap items-center gap-2 pt-1">
+                              <span>Farmer: <strong className="text-white">{tx.masked_phone}</strong></span>
+                              <span>•</span>
+                              <span>Village: <strong className="text-white">{tx.village || 'Kalmeshwar'}</strong> ({tx.block || 'Nagpur Rural'})</span>
+                              <span>•</span>
+                              <span>Crop: <strong className="text-white">{tx.crop || 'Soybean'}</strong></span>
+                              <span>•</span>
+                              <span className="text-purple-300 font-semibold">Routing: HIGH_RISK → VOICE + SMS</span>
+                            </div>
+                          </div>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTransaction(tx);
+                            }}
+                            className="shrink-0 text-xs bg-purple-900/70 hover:bg-purple-800 text-purple-200 px-3 py-1.5 rounded-lg font-semibold border border-purple-700 transition flex items-center space-x-1 mt-1"
+                          >
+                            <span>Inspect Voice Trace</span>
+                            <ChevronRight className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  // Prominent NEW FARMER REGISTERED Card
+                  if (isRegistrationSuccess) {
+                    return (
+                      <div
+                        key={tx.id}
+                        onClick={() => setSelectedTransaction(tx)}
+                        className="cursor-pointer bg-gradient-to-r from-emerald-950/80 via-emerald-900/40 to-slate-900 border-2 border-emerald-500/80 rounded-xl p-4 shadow-lg hover:border-emerald-400 transition"
+                      >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                          <div className="flex items-center space-x-3">
+                            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/40">
+                              <UserCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <div className="flex items-center space-x-2">
+                                <span className="text-xs font-black uppercase tracking-wider text-emerald-300">
+                                  NEW FARMER REGISTERED
+                                </span>
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-900/60 text-emerald-200 border border-emerald-700">
+                                  {tx.masked_phone}
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {tx.timestamp ? new Date(tx.timestamp).toLocaleTimeString() : ''}
+                                </span>
+                              </div>
+                              <div className="text-xs text-slate-200 mt-1">
+                                Village: <strong className="text-white">{tx.village || 'Registered'}</strong> | Block: <strong className="text-white">{tx.block || 'Nagpur Rural'}</strong> | Crop: <strong className="text-white">{tx.crop || 'Soybean'}</strong> | Language: <strong className="text-white">{tx.language || 'Hindi'}</strong> | Consent: <strong className="text-emerald-400">YES</strong>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs font-semibold text-emerald-400 bg-emerald-950 px-2.5 py-1 rounded border border-emerald-800">
+                              Registration Complete
+                            </span>
+                            <button className="text-xs bg-slate-800 hover:bg-slate-700 text-sky-300 px-3 py-1 rounded border border-slate-700 flex items-center space-x-1">
+                              <span>Inspect</span>
+                              <ChevronRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div
+                      key={tx.id}
+                      onClick={() => setSelectedTransaction(tx)}
+                      className={`cursor-pointer rounded-xl p-4 border transition-all hover:border-sky-500/60 ${
+                        isInbound
+                          ? 'bg-slate-950/70 border-slate-800 hover:bg-slate-900/80'
+                          : 'bg-slate-900/90 border-slate-700/80 hover:bg-slate-800/80'
+                      }`}
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-slate-800/60">
+                        <div className="flex items-center space-x-2.5">
+                          <span
+                            className={`px-2.5 py-0.5 rounded text-[11px] font-black tracking-wider uppercase ${
+                              isInbound
+                                ? 'bg-sky-950 text-sky-300 border border-sky-800'
+                                : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
+                            }`}
+                          >
+                            {isInbound ? '[INBOUND]' : '[OUTBOUND]'}
+                          </span>
+                          <span className="font-mono text-xs font-bold text-white">
+                            {tx.masked_phone}
+                          </span>
+                          <span className="text-[10px] text-slate-500 font-mono">
+                            {tx.timestamp ? new Date(tx.timestamp).toLocaleTimeString() : ''}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center space-x-2">
+                          <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">
+                            {tx.provider || 'MOCK'}
+                          </span>
+                          {tx.step_after && (
+                            <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-800">
+                              STEP: {tx.step_after}
+                            </span>
+                          )}
+                          {getStatusBadge(tx.status)}
+                        </div>
+                      </div>
+
+                      <div className="mt-2.5 flex items-start justify-between gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs text-slate-200 font-mono whitespace-pre-wrap leading-relaxed">
+                            {tx.full_message}
+                          </p>
+                          {tx.village && (
+                            <div className="text-[11px] text-slate-400 flex items-center space-x-2 pt-1">
+                              <span>Farmer: {tx.masked_phone}</span>
+                              <span>•</span>
+                              <span>{tx.village} ({tx.block})</span>
+                              {tx.crop && <span>• Crop: {tx.crop}</span>}
+                            </div>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setSelectedTransaction(tx);
+                          }}
+                          className="shrink-0 text-[11px] bg-slate-800 hover:bg-slate-700 text-sky-400 px-2.5 py-1 rounded font-semibold border border-slate-700 transition"
+                        >
+                          Drill Down
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* ========================================================================= */}
+          {/* DEMO TRANSACTION VIEW MODAL / DRAWER                                     */}
+          {/* Communication -> Farmer -> Location -> Model -> Prediction -> XAI -> Advisory -> SMS */}
+          {/* ========================================================================= */}
+          {selectedTransaction && (
+            <div className="fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+              <div className="bg-slate-900 border border-slate-700 rounded-2xl max-w-3xl w-full p-6 space-y-6 shadow-2xl relative my-8">
+                {selectedTransaction.channel === 'VOICE' || selectedTransaction.event_type === 'AI_VOICE_ALERT' ? (
+                  <>
+                    <div className="flex items-center justify-between border-b border-purple-900/60 pb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center border border-purple-500/30">
+                          <PhoneCall className="w-6 h-6 animate-pulse" />
+                        </div>
+                        <div>
+                          <div className="flex items-center space-x-2">
+                            <h3 className="font-bold text-white text-base">Meghvani AI Voice Alert Architecture</h3>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-700">
+                              DEMO SIMULATION
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-400">
+                            Full trace: Communication $\to$ Farmer $\to$ Location $\to$ Prediction $\to$ Risk $\to$ XAI $\to$ Advisory $\to$ Voice Gen $\to$ Playback
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedTransaction(null)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* 9-Step Voice Pipeline Flow */}
+                    <div className="space-y-3.5 max-h-[65vh] overflow-y-auto pr-1">
+                      {/* 1. Communication Routing */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-300 flex items-center justify-center text-xs font-bold shrink-0">
+                          1
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Communication Hierarchy & Escalation Routing</span>
+                            <span className="font-mono text-purple-400 font-bold">HIGH_RISK → VOICE + SMS</span>
+                          </div>
+                          <div className="text-slate-400">
+                            Policy: <strong className="text-slate-200">NORMAL $\to$ SMS</strong> | <strong className="text-slate-200">IMPORTANT $\to$ SMS/WhatsApp</strong> | <strong className="text-purple-300 font-bold">HIGH_RISK $\to$ VOICE + SMS</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 2. Farmer Identification */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          2
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Farmer Profile & Multilingual Preferences</span>
+                            <span className="font-mono text-sky-300 font-bold">{selectedTransaction.masked_phone}</span>
+                          </div>
+                          <div className="text-slate-400">
+                            Preferred Language: <strong className="text-white uppercase">{selectedTransaction.language || 'mr'}</strong> | Registered Crop: <strong className="text-white">{selectedTransaction.crop || 'Soybean'}</strong> | Consent: <strong className="text-emerald-400">Active (YES)</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 3. Location Hierarchy */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          3
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white">Hyperlocal Geography & Spatial Mapping</div>
+                          <div className="text-slate-400">
+                            Village: <strong className="text-white">{selectedTransaction.village || 'Kalmeshwar'}</strong> | Block: <strong className="text-white">{selectedTransaction.block || 'Nagpur Rural (BLK001)'}</strong> | State: <strong>Maharashtra</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 4. Hyperlocal Prediction */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          4
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Hyperlocal ML Prediction (Reused Model Pipeline)</span>
+                            <span className="text-amber-400 font-bold font-mono">
+                              {selectedTransaction.xai_context?.probability_pct ?? 82}% Prob
+                            </span>
+                          </div>
+                          <div className="text-slate-400">
+                            Forecast: <strong className="text-white">Heavy Rainfall & Soil Saturation Surge</strong> | Target Horizon: <strong>24-48 Hours</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 5. Risk Assessment */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-red-500/20 text-red-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          5
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Risk Engine Assessment</span>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-red-950 text-red-300 border border-red-800">
+                              HIGH_RISK
+                            </span>
+                          </div>
+                          <div className="text-slate-400">
+                            Classification: <strong className="text-red-400">HIGH_RISK (Severity Threshold $\ge 75\%$)</strong>. Triggers automated escalation to AI Voice Call.
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 6. Explainable AI (XAI) */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          6
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white">Farmer-Friendly Agricultural XAI Explanation</div>
+                          <div className="text-slate-300 italic bg-slate-900 p-2.5 rounded border border-slate-800">
+                            &quot;Rainfall conditions are intensifying rapidly, but recent dry spell creates severe runoff risk and false onset vulnerability.&quot;
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 7. Advisory Engine */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          7
+                        </div>
+                        <div className="flex-1 text-xs space-y-1.5">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Advisory Engine (Localized Script)</span>
+                            <span className="font-bold text-teal-300 uppercase">
+                              {selectedTransaction.language || 'mr'}
+                            </span>
+                          </div>
+                          <div className="bg-slate-900 p-2.5 rounded-lg border border-slate-800 font-mono text-slate-200">
+                            {selectedTransaction.full_message}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 8. Sarvam AI Voice Generation */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          8
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Sarvam AI Bulbul v3 TTS Service</span>
+                            <span className="font-mono text-purple-300">{selectedTransaction.provider || 'Sarvam AI (Bulbul v3)'}</span>
+                          </div>
+                          <div className="text-slate-400">
+                            Synthesis: <strong className="text-white">Bulbul v3 Neural Voice</strong> | In-Memory Audio Caching: <strong className="text-emerald-400">ENABLED</strong> (Prevents redundant API calls on replay)
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* 9. Delivery & Playback Simulation */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          9
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Farmer Mobile Delivery & Call Simulation</span>
+                            <span className="font-bold text-emerald-400">
+                              {selectedTransaction.status === 'PLAYED' ? 'Voice Alert Played' : 'Voice Alert Ready'}
+                            </span>
+                          </div>
+                          <div className="text-slate-400">
+                            Simulation Mode: <strong className="text-slate-200">In-App Mobile Call (Honest Demo)</strong>. Phone rings $\to$ Answer $\to$ Waveform streaming $\to$ Replay/End call.
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center border border-emerald-500/30">
+                          <Cpu className="w-6 h-6" />
+                        </div>
+                        <div>
+                          <h3 className="font-bold text-white text-base">Meghvani End-to-End Transaction Architecture</h3>
+                          <p className="text-xs text-slate-400">
+                            Full trace: Webhook $\to$ Farmer $\to$ Location $\to$ Multi-Event ML $\to$ XAI $\to$ Advisory $\to$ SMS
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedTransaction(null)}
+                        className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800"
+                      >
+                        ✕
+                      </button>
+                    </div>
+
+                    {/* Standard SMS Pipeline Flow Visualization */}
+                    <div className="space-y-4">
+                      {/* Step 1: Communication Gateway */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-sky-500/20 text-sky-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          1
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Communication Gateway ({selectedTransaction.direction})</span>
+                            <span className="font-mono text-sky-400">{selectedTransaction.provider}</span>
+                          </div>
+                          <div className="text-slate-400">
+                            Status: <strong className="text-emerald-400">{selectedTransaction.status}</strong> | Timestamp: {selectedTransaction.timestamp ? new Date(selectedTransaction.timestamp).toLocaleString() : 'N/A'}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 2: Farmer Profile */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          2
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Farmer Identification & Privacy Masking</span>
+                            <span className="font-mono text-purple-300 font-bold">{selectedTransaction.masked_phone}</span>
+                          </div>
+                          <div className="text-slate-400">
+                            Preferred Language: <strong className="text-white">{selectedTransaction.language || 'Hindi'}</strong> | Consent: <strong className="text-emerald-400">Active (YES)</strong> | Channel: <strong>SMS</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 3: Location Hierarchy */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          3
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white">Hyperlocal Geography & Spatial Mapping</div>
+                          <div className="text-slate-400">
+                            Village: <strong className="text-white">{selectedTransaction.village || 'Kalmeshwar'}</strong> | Block: <strong className="text-white">{selectedTransaction.block || 'Nagpur Rural (BLK001)'}</strong> | State: <strong>Maharashtra</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 4: ML Prediction & Multi-Event Pipeline */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          4
+                        </div>
+                        <div className="flex-1 text-xs space-y-1">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Multi-Event Probabilistic Model (Phase 3B Baseline)</span>
+                            <span className="text-amber-400 font-bold">
+                              {selectedTransaction.xai_context?.risk_tier || 'Low Risk'}
+                            </span>
+                          </div>
+                          <div className="text-slate-400">
+                            Target Risk: <strong>False Onset (7-Day Horizon)</strong> | Calibrated Probability: <strong className="text-white font-mono">{selectedTransaction.xai_context?.probability_pct ?? 18}%</strong>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 5: Explainable AI (XAI) Attribution */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          5
+                        </div>
+                        <div className="flex-1 text-xs space-y-1.5">
+                          <div className="font-bold text-white">Explainable AI (Signed Feature Contributions)</div>
+                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                            {selectedTransaction.xai_context?.top_drivers?.map((td, i) => (
+                              <div key={i} className="bg-slate-900 p-2 rounded border border-slate-800 text-[11px]">
+                                <div className="text-slate-300 font-medium truncate">{td.label}</div>
+                                <div className="flex items-center justify-between text-slate-400 mt-0.5">
+                                  <span>Share: {td.share_pct}%</span>
+                                  <span className={td.direction === 'REDUCING' ? 'text-emerald-400 font-bold' : 'text-amber-400 font-bold'}>
+                                    {td.direction}
+                                  </span>
+                                </div>
+                              </div>
+                            )) || (
+                              <div className="text-slate-400 text-xs col-span-3">
+                                Features evaluated against historical climatology & antecedent 7-day rainfall.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Step 6: Advisory & Outbound SMS Dispatch */}
+                      <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex items-start space-x-3">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold shrink-0">
+                          6
+                        </div>
+                        <div className="flex-1 text-xs space-y-1.5">
+                          <div className="font-bold text-white flex items-center justify-between">
+                            <span>Advisory Decision Rule & Real SMS Dispatch</span>
+                            <span className="font-bold text-emerald-400">
+                              {selectedTransaction.xai_context?.decision || 'SOW_NOW'}
+                            </span>
+                          </div>
+                          <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 font-mono text-slate-200 whitespace-pre-wrap">
+                            {selectedTransaction.full_message}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-end pt-2 border-t border-slate-800">
+                  <button
+                    onClick={() => setSelectedTransaction(null)}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-lg transition"
+                  >
+                    Close Trace View
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* 1. OFFICER AUDIT DASHBOARD TAB                                            */}
@@ -218,7 +1027,7 @@ export const AlertCenterPage: React.FC = () => {
       {activeSubTab === 'dashboard' && (
         <div className="space-y-6">
           {/* Summary Metric Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
               <div className="text-xs text-slate-400 font-medium">Alerts Generated</div>
               <div className="text-2xl font-black text-white mt-1">{totalAlerts}</div>
@@ -226,9 +1035,9 @@ export const AlertCenterPage: React.FC = () => {
             </div>
 
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-              <div className="text-xs text-emerald-400 font-medium">Simulated Sent</div>
+              <div className="text-xs text-emerald-400 font-medium">Dispatched / Sent</div>
               <div className="text-2xl font-black text-emerald-300 mt-1">{successfulCount}</div>
-              <div className="text-[10px] text-emerald-500/80 mt-1">Direct mock delivery</div>
+              <div className="text-[10px] text-emerald-500/80 mt-1">Mock / Twilio dispatch</div>
             </div>
 
             <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
@@ -248,77 +1057,74 @@ export const AlertCenterPage: React.FC = () => {
               <div className="text-2xl font-black text-purple-300 mt-1">{noRuleBlockedCount}</div>
               <div className="text-[10px] text-purple-500/80 mt-1">Safety gate enforced</div>
             </div>
-
-            <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl">
-              <div className="text-xs text-blue-400 font-medium">Duplicate Suppressed</div>
-              <div className="text-2xl font-black text-blue-300 mt-1">{duplicateCount}</div>
-              <div className="text-[10px] text-blue-500/80 mt-1">24h Cooldown policy</div>
-            </div>
           </div>
 
-          {/* Filter Bar */}
-          <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center space-x-1.5 text-xs text-slate-400">
+          {/* Filters & Controls */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-3 text-xs">
+              <div className="flex items-center space-x-1.5 text-slate-400">
                 <Filter className="w-3.5 h-3.5" />
-                <span>Filters:</span>
+                <span className="font-semibold">Filter:</span>
               </div>
 
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-950 border border-slate-700 text-slate-300 rounded px-2.5 py-1.5 outline-none focus:border-sky-500"
               >
                 <option value="">All Statuses</option>
-                <option value="SIMULATED_SENT">SIMULATED_SENT</option>
-                <option value="FALLBACK_USED">FALLBACK_USED</option>
-                <option value="BLOCKED_NO_CONSENT">BLOCKED_NO_CONSENT</option>
-                <option value="BLOCKED_NO_VALIDATED_RULE">BLOCKED_NO_VALIDATED_RULE</option>
-                <option value="DUPLICATE_SUPPRESSED">DUPLICATE_SUPPRESSED</option>
-                <option value="SIMULATED_FAILED">SIMULATED_FAILED</option>
+                <option value="SIMULATED_SENT">Simulated Sent</option>
+                <option value="FALLBACK_USED">Fallback Used</option>
+                <option value="BLOCKED_NO_CONSENT">No Consent</option>
+                <option value="BLOCKED_NO_VALIDATED_RULE">No Validated Rule</option>
+                <option value="DUPLICATE_SUPPRESSED">Duplicate Suppressed</option>
               </select>
 
               <select
                 value={channelFilter}
                 onChange={(e) => setChannelFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-950 border border-slate-700 text-slate-300 rounded px-2.5 py-1.5 outline-none focus:border-sky-500"
               >
                 <option value="">All Channels</option>
                 <option value="SMS">SMS</option>
-                <option value="WHATSAPP">WhatsApp</option>
                 <option value="VOICE">Voice</option>
+                <option value="WHATSAPP">WhatsApp</option>
               </select>
 
               <select
                 value={severityFilter}
                 onChange={(e) => setSeverityFilter(e.target.value)}
-                className="bg-slate-950 border border-slate-800 text-xs rounded-lg px-3 py-1.5 text-slate-200 focus:outline-none focus:border-sky-500"
+                className="bg-slate-950 border border-slate-700 text-slate-300 rounded px-2.5 py-1.5 outline-none focus:border-sky-500"
               >
                 <option value="">All Severities</option>
-                <option value="INFO">INFO</option>
-                <option value="IMPORTANT">IMPORTANT</option>
-                <option value="HIGH">HIGH</option>
+                <option value="INFO">Info</option>
+                <option value="IMPORTANT">Important</option>
+                <option value="HIGH">High</option>
               </select>
             </div>
 
-            <button
-              onClick={fetchAlerts}
-              className="flex items-center space-x-1.5 px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs rounded-lg font-medium transition-colors"
-            >
-              <RefreshCw className={`w-3.5 h-3.5 ${loadingAlerts ? 'animate-spin' : ''}`} />
-              <span>Refresh Log</span>
-            </button>
+            <div className="flex items-center space-x-3">
+              <span className="text-xs text-slate-400">
+                Privacy Protection: <strong className="text-emerald-400">Strict Masking Active</strong>
+              </span>
+              <button
+                onClick={fetchAlerts}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+                title="Refresh logs"
+              >
+                <RefreshCw className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
           {/* Alert Audit Table */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden shadow-lg">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-950 text-slate-400 font-semibold border-b border-slate-800">
+              <table className="w-full text-left text-xs text-slate-300">
+                <thead className="bg-slate-950/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
                   <tr>
-                    <th className="py-3 px-4">Time (UTC)</th>
-                    <th className="py-3 px-4">Block</th>
-                    <th className="py-3 px-4">Recipient</th>
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">Masked Recipient</th>
                     <th className="py-3 px-4">Crop</th>
                     <th className="py-3 px-4">Decision</th>
                     <th className="py-3 px-4">Severity</th>
@@ -328,25 +1134,29 @@ export const AlertCenterPage: React.FC = () => {
                     <th className="py-3 px-4 text-right">Action</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {alerts.length === 0 ? (
+                <tbody className="divide-y divide-slate-800/60 font-mono">
+                  {loadingAlerts ? (
                     <tr>
-                      <td colSpan={10} className="py-8 text-center text-slate-500">
-                        {loadingAlerts ? 'Loading simulated alert dispatches...' : 'No alert dispatches found for current filter.'}
+                      <td colSpan={9} className="text-center py-10 text-slate-500">
+                        Loading audit logs...
+                      </td>
+                    </tr>
+                  ) : alerts.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="text-center py-10 text-slate-500">
+                        No audit records match the current filter criteria.
                       </td>
                     </tr>
                   ) : (
                     alerts.map((al) => (
                       <tr key={al.id} className="hover:bg-slate-800/40 transition-colors">
-                        <td className="py-3 px-4 text-slate-400 whitespace-nowrap">
-                          {new Date(al.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                        <td className="py-3 px-4 whitespace-nowrap text-slate-400">
+                          {new Date(al.created_at).toLocaleTimeString()}
                         </td>
-                        <td className="py-3 px-4 font-mono text-slate-300">BLK{al.block_id?.toString().padStart(3, '0')}</td>
-                        <td className="py-3 px-4 text-slate-300">
-                          <span className="font-mono text-slate-400">ID #{al.farmer_id}</span>{' '}
-                          <span className="text-slate-500 text-[11px]">({al.masked_phone || '******'})</span>
+                        <td className="py-3 px-4 font-bold text-sky-400 whitespace-nowrap">
+                          {al.masked_phone || '******'}
                         </td>
-                        <td className="py-3 px-4 capitalize text-slate-300">{al.crop_id || 'Soybean'}</td>
+                        <td className="py-3 px-4 capitalize font-sans">{al.crop_id || 'Soybean'}</td>
                         <td className="py-3 px-4 font-semibold text-slate-200">{al.decision || 'SOW_NOW'}</td>
                         <td className="py-3 px-4">{getSeverityBadge(al.severity)}</td>
                         <td className="py-3 px-4 whitespace-nowrap">
@@ -443,28 +1253,17 @@ export const AlertCenterPage: React.FC = () => {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">External Dispatch:</span>
-                    <span className="font-mono text-emerald-400 font-bold">FALSE (Simulated Mock)</span>
+                    <span className="font-mono text-emerald-400 font-bold">
+                      {selectedAlert.external_dispatch ? 'TRUE (Twilio SMS)' : 'FALSE (Simulated Mock)'}
+                    </span>
                   </div>
-                  {selectedAlert.reason && (
-                    <div className="pt-1.5 border-t border-slate-800 text-slate-400">
-                      <span className="text-slate-500">Dispatch Audit Note:</span> {selectedAlert.reason}
-                    </div>
-                  )}
                 </div>
 
-                {/* Message Body Content */}
                 <div className="space-y-1.5">
-                  <span className="text-xs font-semibold text-slate-400 block">Simulated Message Payload</span>
-                  <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl font-sans text-xs text-slate-200 whitespace-pre-wrap leading-relaxed">
+                  <span className="text-xs font-semibold text-slate-400 block">Dispatched Message Body</span>
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-sans">
                     {selectedAlert.message}
                   </div>
-                </div>
-
-                <div className="p-3 bg-amber-950/40 border border-amber-800/60 rounded-xl text-[11px] text-amber-300 flex items-center space-x-2">
-                  <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0" />
-                  <span>
-                    Meghvani prototype audit log. In accordance with ethical AI guidelines, real farmer communication remains unconfigured.
-                  </span>
                 </div>
               </div>
             </div>
@@ -473,196 +1272,148 @@ export const AlertCenterPage: React.FC = () => {
       )}
 
       {/* ========================================================================= */}
-      {/* 2. FARMER SIMULATION & RESILIENCE SANDBOX TAB                             */}
+      {/* 2. FARMER SIMULATION & SANDBOX TAB                                        */}
       {/* ========================================================================= */}
       {activeSubTab === 'sandbox' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          {/* Configuration Form */}
+          {/* Controls Column */}
           <div className="lg:col-span-5 space-y-6">
             <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
-              <div className="flex items-center space-x-2.5 pb-4 border-b border-slate-800">
-                <Sparkles className="w-5 h-5 text-sky-400" />
-                <h3 className="font-bold text-white text-base">Simulation Configuration</h3>
-              </div>
-
-              {/* Farmer Selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Select Registered Farmer</label>
-                <select
-                  value={simFarmerId}
-                  onChange={(e) => setSimFarmerId(Number(e.target.value))}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 text-slate-200 focus:outline-none focus:border-sky-500"
-                >
-                  <option value={1}>Farmer #1: Ramesh Patil (Nagpur Rural, Consent: Yes)</option>
-                  <option value={2}>Farmer #2: Suresh Deshmukh (Wardha East, Consent: Yes)</option>
-                  <option value={3}>Farmer #3: Sunita Wankhede (Amravati, Consent: Yes)</option>
-                </select>
-              </div>
-
-              {/* Crop Selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Select Sown Kharif Crop</label>
-                <select
-                  value={simCropId}
-                  onChange={(e) => setSimCropId(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 text-slate-200 focus:outline-none focus:border-sky-500"
-                >
-                  <option value="soybean">Soybean (ICAR-CRIDA Validated)</option>
-                  <option value="cotton">Cotton (ICAR-CICR Validated)</option>
-                  <option value="pigeonpea">Pigeonpea / Tur (Dr. PDKV Validated)</option>
-                </select>
-              </div>
-
-              {/* Language Selection */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Advisory Language</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {[
-                    { id: 'mr', label: 'मराठी (mr)' },
-                    { id: 'hi', label: 'हिन्दी (hi)' },
-                    { id: 'en', label: 'English (en)' }
-                  ].map((l) => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      onClick={() => setSimLanguage(l.id)}
-                      className={`py-2 px-3 rounded-lg text-xs font-semibold border transition-all ${
-                        simLanguage === l.id
-                          ? 'bg-sky-500/20 text-sky-300 border-sky-500/40'
-                          : 'bg-slate-950 border-slate-800 text-slate-400 hover:text-slate-200'
-                      }`}
-                    >
-                      {l.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Severity Override */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Alert Severity Policy</label>
-                <select
-                  value={simSeverity}
-                  onChange={(e) => setSimSeverity(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 text-slate-200 focus:outline-none focus:border-sky-500"
-                >
-                  <option value="">Auto (Derived from Model False-Onset Probability)</option>
-                  <option value="INFO">INFO (Routes SMS)</option>
-                  <option value="IMPORTANT">IMPORTANT (Routes SMS + WhatsApp)</option>
-                  <option value="HIGH">HIGH (Routes Voice + SMS)</option>
-                </select>
-              </div>
-
-              {/* Channel Preference */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300">Channel Preference</label>
-                <select
-                  value={simChannelPref}
-                  onChange={(e) => setSimChannelPref(e.target.value)}
-                  className="w-full bg-slate-950 border border-slate-800 text-xs rounded-xl p-3 text-slate-200 focus:outline-none focus:border-sky-500"
-                >
-                  <option value="ALL">Policy Default (Severity Matrix)</option>
-                  <option value="SMS">SMS Only</option>
-                  <option value="WHATSAPP">WhatsApp Preferred</option>
-                  <option value="VOICE">Voice Preferred</option>
-                </select>
-              </div>
-
-              {/* Resilience Test: Forced Failure */}
-              <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-2">
-                <label className="text-xs font-bold text-amber-400 flex items-center space-x-1.5">
-                  <AlertTriangle className="w-3.5 h-3.5" />
-                  <span>Resilience Simulation (Test Fallback)</span>
-                </label>
-                <select
-                  value={simForceFailure}
-                  onChange={(e) => setSimForceFailure(e.target.value)}
-                  className="w-full bg-slate-900 border border-slate-700 text-xs rounded-lg p-2.5 text-slate-200 focus:outline-none focus:border-amber-500"
-                >
-                  <option value="">No Failure (Standard Delivery)</option>
-                  <option value="VOICE">Force Voice Failure $\to$ Triggers SMS Fallback</option>
-                  <option value="WHATSAPP">Force WhatsApp Failure $\to$ Triggers SMS Fallback</option>
-                </select>
-                <p className="text-[10px] text-slate-500">
-                  Simulates telecom gateway outage to demonstrate automatic SMS fallback without dropping advisory alerts.
+              <div>
+                <h3 className="font-bold text-white text-base flex items-center space-x-2">
+                  <Zap className="w-5 h-5 text-amber-400" />
+                  <span>Resilience Simulation Setup</span>
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Configure farmer scenario, failure injections, and preview automated fallback.
                 </p>
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex space-x-3 pt-2">
+              {errorMessage && (
+                <div className="bg-rose-950/60 border border-rose-800 text-rose-300 text-xs p-3 rounded-lg">
+                  {errorMessage}
+                </div>
+              )}
+
+              <div className="space-y-4 text-xs">
+                <div>
+                  <label className="text-slate-400 font-semibold block mb-1">Target Farmer Profile</label>
+                  <select
+                    value={simFarmerId}
+                    onChange={(e) => setSimFarmerId(Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2.5 outline-none focus:border-sky-500"
+                  >
+                    <option value={1}>Farmer #1: Ramesh Patil (Kalmeshwar, Soybean, Marathi - Consented)</option>
+                    <option value={2}>Farmer #2: Suresh Deshmukh (Mohpa, Cotton, Marathi - Consented)</option>
+                    <option value={3}>Farmer #3: Sunita Wankhede (Dhotra, Soybean, Hindi - Consented)</option>
+                    <option value={4}>Farmer #4: Non-Consenting Farmer (Consent Block Test)</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-slate-400 font-semibold block mb-1">Crop</label>
+                    <select
+                      value={simCropId}
+                      onChange={(e) => setSimCropId(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2.5 outline-none focus:border-sky-500 capitalize"
+                    >
+                      <option value="soybean">Soybean</option>
+                      <option value="cotton">Cotton</option>
+                      <option value="pigeonpea">Pigeonpea</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-slate-400 font-semibold block mb-1">Language</label>
+                    <select
+                      value={simLanguage}
+                      onChange={(e) => setSimLanguage(e.target.value)}
+                      className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2.5 outline-none focus:border-sky-500"
+                    >
+                      <option value="mr">Marathi (mr)</option>
+                      <option value="hi">Hindi (hi)</option>
+                      <option value="en">English (en)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 font-semibold block mb-1">
+                    Severity Level (Auto-derived from model if unselected)
+                  </label>
+                  <select
+                    value={simSeverity}
+                    onChange={(e) => setSimSeverity(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2.5 outline-none focus:border-sky-500"
+                  >
+                    <option value="">Auto (Use Live Model / Threshold Engine)</option>
+                    <option value="INFO">INFO: SMS Only (Low Risk, SOW_NOW)</option>
+                    <option value="IMPORTANT">IMPORTANT: SMS + WhatsApp (Moderate Risk, SOW_PART_NOW)</option>
+                    <option value="HIGH">HIGH: Voice Call with SMS Fallback (Elevated Risk, WAIT)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-slate-400 font-semibold block mb-1">
+                    Channel Preference Override
+                  </label>
+                  <select
+                    value={simChannelPref}
+                    onChange={(e) => setSimChannelPref(e.target.value)}
+                    className="w-full bg-slate-950 border border-slate-700 text-slate-200 rounded-lg p-2.5 outline-none focus:border-sky-500"
+                  >
+                    <option value="ALL">Follow Severity Matrix</option>
+                    <option value="SMS">Force SMS Only</option>
+                    <option value="VOICE">Force Voice Only</option>
+                    <option value="WHATSAPP">Force WhatsApp Only</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-amber-400 font-semibold block mb-1 flex items-center space-x-1">
+                    <AlertTriangle className="w-3.5 h-3.5" />
+                    <span>Fault Injection (Test Resilience Fallback)</span>
+                  </label>
+                  <select
+                    value={simForceFailure}
+                    onChange={(e) => setSimForceFailure(e.target.value)}
+                    className="w-full bg-slate-950 border border-amber-800/80 text-amber-200 rounded-lg p-2.5 outline-none focus:border-amber-500"
+                  >
+                    <option value="">Normal Operation (No Fault)</option>
+                    <option value="VOICE">Simulate Voice Failure (Unanswered Call $\to$ Fallback to SMS)</option>
+                    <option value="WHATSAPP">Simulate WhatsApp Gateway Timeout</option>
+                    <option value="ALL">Simulate Total Outage</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center space-x-3">
                 <button
+                  type="button"
                   onClick={handlePreview}
-                  disabled={previewing || simulating}
-                  className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center space-x-2"
+                  disabled={previewing}
+                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs bg-slate-800 hover:bg-slate-700 text-sky-400 border border-slate-700 transition-colors disabled:opacity-50 flex items-center justify-center space-x-1.5"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>{previewing ? 'Previewing...' : 'Preview Plan'}</span>
+                  <span>{previewing ? 'Evaluating...' : 'Preview Plan'}</span>
                 </button>
-
                 <button
+                  type="button"
                   onClick={handleSimulate}
-                  disabled={simulating || previewing}
-                  className="flex-1 py-3 bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-400 hover:to-teal-400 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-sky-500/25 flex items-center justify-center space-x-2"
+                  disabled={simulating}
+                  className="flex-1 py-2.5 rounded-lg font-semibold text-xs bg-sky-500 hover:bg-sky-400 text-white shadow-lg shadow-sky-500/25 transition-all disabled:opacity-50 flex items-center justify-center space-x-1.5"
                 >
                   <Send className="w-4 h-4" />
                   <span>{simulating ? 'Simulating...' : 'Simulate Dispatch'}</span>
                 </button>
               </div>
-
-              {errorMessage && (
-                <div className="p-3 bg-rose-950/40 border border-rose-800 text-rose-300 text-xs rounded-xl flex items-center space-x-2">
-                  <XCircle className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>{errorMessage}</span>
-                </div>
-              )}
             </div>
           </div>
 
-          {/* Live Pipeline Trace & Result Visualization */}
+          {/* Results Column */}
           <div className="lg:col-span-7 space-y-6">
-            {/* End-to-End Pipeline Trace Architecture */}
-            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
-              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-4 flex items-center space-x-2">
-                <Layers className="w-4 h-4 text-sky-400" />
-                <span>End-to-End Pipeline Execution Trace</span>
-              </h4>
-
-              <div className="grid grid-cols-2 sm:grid-cols-6 gap-2 text-center text-xs">
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">1. Forecast</div>
-                  <div className="text-sky-400 font-bold mt-1">P(False Onset)</div>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">2. Decision</div>
-                  <div className="text-emerald-400 font-bold mt-1">SOW_NOW / WAIT</div>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">3. Agronomy</div>
-                  <div className="text-purple-400 font-bold mt-1">VALIDATED Rule</div>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">4. Message</div>
-                  <div className="text-amber-400 font-bold mt-1">Multi-Lingual</div>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">5. Routing</div>
-                  <div className="text-teal-400 font-bold mt-1">Severity Plan</div>
-                </div>
-
-                <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
-                  <div className="text-[10px] text-slate-500 uppercase font-semibold">6. Delivery</div>
-                  <div className="text-blue-400 font-bold mt-1">Mock Dispatch</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Simulation Result Output */}
             {simResult && (
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl animate-in fade-in duration-300">
+              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-5 shadow-xl">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center space-x-2">
                     <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -671,11 +1422,10 @@ export const AlertCenterPage: React.FC = () => {
                   <div>{getStatusBadge(simResult.status)}</div>
                 </div>
 
-                {/* Key Execution Metrics */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
                   <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
                     <span className="text-slate-500 block">Recipient</span>
-                    <span className="font-mono text-sky-400 font-bold">{simResult.masked_phone}</span>
+                    <span className="font-mono text-sky-300 font-bold">{simResult.masked_phone || '******'}</span>
                   </div>
                   <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
                     <span className="text-slate-500 block">Decision</span>
@@ -686,67 +1436,23 @@ export const AlertCenterPage: React.FC = () => {
                     <div>{getSeverityBadge(simResult.severity)}</div>
                   </div>
                   <div className="bg-slate-950 p-3 rounded-lg border border-slate-800">
-                    <span className="text-slate-500 block">External Dispatch</span>
-                    <span className="font-mono text-emerald-400 font-bold">FALSE (Simulated)</span>
+                    <span className="text-slate-500 block">Fallback Used</span>
+                    <span className={simResult.fallback_used ? 'text-amber-400 font-bold' : 'text-slate-400'}>
+                      {simResult.fallback_used ? 'Yes (SMS Fallback)' : 'No'}
+                    </span>
                   </div>
                 </div>
 
-                {/* Provider Execution Sequence (Shows Failure & Fallback Trace) */}
-                <div className="space-y-2">
-                  <span className="text-xs font-bold text-slate-300 block">Provider Dispatch Execution Trace</span>
-                  <div className="space-y-2">
-                    {simResult.dispatches?.map((d, idx) => (
-                      <div
-                        key={idx}
-                        className={`p-3 rounded-xl border text-xs flex items-center justify-between ${
-                          d.success
-                            ? 'bg-slate-950 border-emerald-900/60'
-                            : 'bg-red-950/30 border-red-800/60'
-                        }`}
-                      >
-                        <div className="flex items-center space-x-2">
-                          {d.success ? (
-                            <CheckCircle className="w-4 h-4 text-emerald-400" />
-                          ) : (
-                            <XCircle className="w-4 h-4 text-red-400" />
-                          )}
-                          <div>
-                            <span className="font-bold text-white mr-2">{d.channel}</span>
-                            <span className="font-mono text-slate-400 text-[11px]">{d.provider_message_id}</span>
-                            {d.error && <p className="text-[11px] text-red-400 mt-0.5">{d.error}</p>}
-                          </div>
-                        </div>
-
-                        <div>
-                          {d.success ? (
-                            <span className="text-emerald-400 font-bold">SIMULATED_SENT</span>
-                          ) : (
-                            <span className="text-red-400 font-bold">SIMULATED_FAILED</span>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Message Payload Display */}
                 <div className="space-y-1.5">
-                  <span className="text-xs font-semibold text-slate-300 block">Delivered Farmer Payload</span>
-                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-200 whitespace-pre-wrap font-sans leading-relaxed">
+                  <span className="text-xs font-semibold text-slate-400 block">Dispatched Message Body</span>
+                  <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 text-xs text-slate-200 whitespace-pre-wrap leading-relaxed font-sans">
                     {simResult.message}
                   </div>
                 </div>
-
-                {simResult.source_institution && (
-                  <div className="text-[11px] text-slate-500 border-t border-slate-800 pt-3">
-                    <span className="font-semibold text-slate-400">Institutional Sourced Guidance:</span> {simResult.source_institution}
-                  </div>
-                )}
               </div>
             )}
 
-            {/* Preview Output */}
-            {!simResult && previewResult && (
+            {previewResult && !simResult && (
               <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <h3 className="font-bold text-white text-base flex items-center space-x-2">
@@ -798,4 +1504,5 @@ export const AlertCenterPage: React.FC = () => {
     </div>
   );
 };
+
 export default AlertCenterPage;
