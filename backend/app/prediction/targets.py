@@ -7,7 +7,7 @@ Targets strictly evaluate observations occurring AFTER prediction date T (i.e. T
 Prediction date T is never included in the future target window.
 """
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 import pandas as pd
 import numpy as np
 import logging

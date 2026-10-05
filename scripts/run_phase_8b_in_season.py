@@ -11,6 +11,7 @@ and writes structured outputs to:
 import sys
 from pathlib import Path
 import json
+from typing import Any, Dict
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT / "backend"))
