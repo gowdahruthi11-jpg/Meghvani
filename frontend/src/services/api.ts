@@ -36,7 +36,9 @@ import {
 } from '../types';
 
 
-const API_BASE = '/api';
+const API_BASE = (import.meta.env.VITE_API_URL as string | undefined)
+  ? `${(import.meta.env.VITE_API_URL as string).replace(/\/+$/, '')}/api`
+  : '/api';
 const DEFAULT_OFFICER_KEY = 'meghvani-officer-dev-key-2026';
 
 async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
